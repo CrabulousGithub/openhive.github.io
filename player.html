@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Radio Player</title>
+    <style>
+        /* Hides text, as players shouldn't see this page */
+        body { background-color: #111; color: #111; }
+    </style>
+</head>
+<body>
+    <h1>Loading stream...</h1>
+
+    <audio id="radio_stream" autoplay controls>
+        Your browser does not support the audio element.
+    </audio>
+
+    <script>
+        window.onload = function() {
+            // Find the <audio> element
+            var player = document.getElementById('radio_stream');
+            
+            // Get the full URL of the current page
+            var urlParams = new URLSearchParams(window.location.search);
+            
+            // Get the "stream" parameter from the URL
+            var streamUrl = urlParams.get('stream');
+
+            if (streamUrl) {
+                // Set the audio player's source to the stream URL
+                player.src = streamUrl;
+                
+                // Set volume (0.0 to 1.0) - 50% is a good default
+                player.volume = 0.5;
+                
+                // Tell the player to load and play the stream
+                player.load();
+                player.play().catch(function(error) {
+                    // Autoplay can sometimes fail; this is a failsafe
+                    console.log("Autoplay failed: ", error);
+                    // You could show a "Click to Play" button here if needed
+                });
+            } else {
+                console.log("No stream URL provided.");
+                document.body.innerHTML = "Error: No stream URL provided.";
+            }
+        };
+    </script>
+</body>
+</html>
