@@ -1,24 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Radio & Video Player</title>
+    <title>Radio Player</title>
     <style>
+        /* Your Dark-Mint theme */
         body { 
             background-color: #1A3A35; /* Dark mint-green background */
             color: #FFF; 
             font-family: Arial, sans-serif;
             padding: 15px;
         }
-        h1, h2 {
+        h1 {
             color: #FFF;
             border-bottom: 2px solid #5C8C80; /* Lighter mint border */
             padding-bottom: 5px;
-            margin-top: 10px;
+            margin-top: 0;
         }
-        h1 { margin-top: 0; }
-        
-        /* Buttons (Radio & YouTube) */
-        .action-button {
+        h2 {
+            margin-top: 30px;
+            border-bottom: 1px solid #5C8C80;
+            padding-bottom: 3px;
+        }
+        /* Style for the radio buttons */
+        .station-button {
             display: block;
             width: 90%;
             padding: 15px;
@@ -31,39 +35,143 @@
             border-radius: 5px;
             cursor: pointer;
         }
-        .action-button:hover {
+        .station-button:hover {
             background-color: #4C8C80; /* Lighter mint on hover */
         }
-        
-        /* Volume Slider */
+        /* Styles for the volume slider */
         .volume-container {
             margin: 10px 0 20px 0;
             display: flex;
             align-items: center;
         }
-        .volume-container label { font-size: 14px; margin-right: 10px; }
-        #volume_slider { width: 70%; }
-
-        /* YouTube Section */
-        #youtube_url {
-            width: 88%;
+        .volume-container label {
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        #volume_slider {
+            width: 70%;
+        }
+        
+        /* Styles for the YouTube section */
+        .youtube-container {
+            margin-top: 20px;
+        }
+        .youtube-input {
+            width: 80%;
             padding: 10px;
             font-size: 14px;
             border-radius: 5px;
-            border: none;
+            border: 1px solid #5C8C80;
+            background-color: #112A25;
+            color: #FFF;
         }
-        /* The iFrame container - 16:9 aspect ratio */
-        .video-container {
-            position: relative;
-            padding-bottom: 56.25%; /* 16:9 */
-            height: 0;
-            overflow: hidden;
+        #youtube_iframe {
             width: 90%;
+            aspect-ratio: 16 / 9; /* 16:9 widescreen video */
+            border: 2px solid #5C8C80;
+            border-radius: 5px;
             margin-top: 15px;
+            background-color: #000; /* Black background while loading */
         }
-        .video-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 1
+    </style>
+</head>
+<body>
+
+    <h1>Server Player</h1>
+
+    <h2><label for="volume_slider">Server Radio</label></h2>
+    <div class="volume-container">
+        <input type="range" id="volume_slider" min="0" max="1" step="0.01" value="0.5">
+    </div>
+    <p>Click a station to start playing. Type <strong>!stopradio</strong> in chat to close.</p>
+    <audio id="radio_stream" controls style="display:none;"></audio>
+    <div id="station-list">
+        <button class="station-button" onclick="playStream('https://rsa.streamabc.net/regc-rsasachsenbeatles9332348-aacplus-64-5150025')">
+            Beatles Radio
+        </button>
+        <button class="station-button" onclick="playStream('https://streams.freetalklive.com:8443/lrn64')">
+            Liberty Radio
+        </button>
+        <button class="station-button" onclick="playStream('https://dallas.stream.publicradio.org/kntu_jazz_64.mp3')">
+            Smooth Jazz (KNTU)
+        </button>
+    </div>
+
+    <h2>YouTube Player</h2>
+    <div class="youtube-container">
+        <input type="text" id="youtube_url" class="youtube-input" placeholder="Paste a YouTube URL...">
+        <button class="station-button" style="width:auto; padding: 10px 15px;" onclick="playYouTube()">
+            Play Video
+        </button>
+    </div>
+    
+    <iframe id="youtube_iframe" src="about:blank" allow="autoplay; encrypted-media" allowfullscreen>
+    </iframe>
+
+    <script>
+        // Get the elements
+        var player = document.getElementById('radio_stream');
+        var volumeSlider = document.getElementById('volume_slider');
+        var youtubeFrame = document.getElementById('youtube_iframe');
+        var youtubeInput = document.getElementById('youtube_url');
+
+        // --- Radio Functions ---
+
+        // Set default volume
+        player.volume = volumeSlider.value;
+
+        // Add an event listener to the slider
+        volumeSlider.oninput = function() {
+            player.volume = this.value;
+        }
+
+        // This function is called by the radio station buttons
+        function playStream(streamUrl) {
+            // STOP the YouTube video by loading a blank page
+            youtubeFrame.src = 'about:blank';
+            
+            // Play the radio stream
+            player.src = streamUrl;
+            player.load();
+            player.play().catch(function(error) {
+                console.log("Player error: ", error);
+            });
+        }
+
+        // --- YouTube Functions ---
+
+        // This function is called by the "Play Video" button
+        function playYouTube() {
+            // STOP the radio stream
+            player.pause();
+            player.src = '';
+            
+            // Get the URL from the input box
+            var videoUrl = youtubeInput.value;
+            var videoId = parseYouTubeId(videoUrl);
+            
+            if (videoId) {
+                // Construct the *embed* URL
+                // *** THIS LINE IS UPDATED ***
+                var embedUrl = "https://www.youtube.com/embed/" + videoId + "?autoplay=1&mute=1";
+                youtubeFrame.src = embedUrl;
+            } else {
+                alert("Invalid YouTube URL. Please use a 'youtube.com/watch?v=' or 'youtu.be/' link.");
+            }
+        }
+        
+        // Helper function to get the ID from a YouTube URL
+        function parseYouTubeId(url) {
+            var regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            var match = url.match(regExp);
+
+            if (match && match[2].length == 11) {
+                return match[2];
+            } else {
+                return null;
+            }
+        }
+    </script>
+
+</body>
+</html>
