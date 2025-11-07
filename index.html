@@ -1,23 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Radio Player</title>
+    <title>Radio & Video Player</title>
     <style>
-        /* Your new Dark-Mint theme */
         body { 
             background-color: #1A3A35; /* Dark mint-green background */
             color: #FFF; 
             font-family: Arial, sans-serif;
             padding: 15px;
         }
-        h1 {
+        h1, h2 {
             color: #FFF;
             border-bottom: 2px solid #5C8C80; /* Lighter mint border */
             padding-bottom: 5px;
-            margin-top: 0;
+            margin-top: 10px;
         }
-        /* Style for the radio buttons */
-        .station-button {
+        h1 { margin-top: 0; }
+        
+        /* Buttons (Radio & YouTube) */
+        .action-button {
             display: block;
             width: 90%;
             padding: 15px;
@@ -30,77 +31,39 @@
             border-radius: 5px;
             cursor: pointer;
         }
-        .station-button:hover {
+        .action-button:hover {
             background-color: #4C8C80; /* Lighter mint on hover */
         }
-        /* Styles for the volume slider */
+        
+        /* Volume Slider */
         .volume-container {
             margin: 10px 0 20px 0;
             display: flex;
             align-items: center;
         }
-        .volume-container label {
+        .volume-container label { font-size: 14px; margin-right: 10px; }
+        #volume_slider { width: 70%; }
+
+        /* YouTube Section */
+        #youtube_url {
+            width: 88%;
+            padding: 10px;
             font-size: 14px;
-            margin-right: 10px;
+            border-radius: 5px;
+            border: none;
         }
-        #volume_slider {
-            width: 70%;
+        /* The iFrame container - 16:9 aspect ratio */
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+            width: 90%;
+            margin-top: 15px;
         }
-    </style>
-</head>
-<body>
-
-    <h1>Server Radio</h1>
-
-    <div class="volume-container">
-        <label for="volume_slider">Volume:</label>
-        <input type="range" id="volume_slider" min="0" max="1" step="0.01" value="0.5">
-    </div>
-
-    <p>Click a station to start playing. Type <strong>!stopradio</strong> in chat to close.</p>
-
-    <audio id="radio_stream" controls style="display:none;"></audio>
-
-    <div id="station-list">
-        
-        <button class="station-button" onclick="playStream('https://rsa.streamabc.net/regc-rsasachsenbeatles9332348-aacplus-64-5150025')">
-            Beatles Radio
-        </button>
-
-        <button class="station-button" onclick="playStream('https://streams.freetalklive.com:8443/lrn64')">
-            Liberty Radio
-        </button>
-
-        <button class="station-button" onclick="playStream('https://dallas.stream.publicradio.org/kntu_jazz_64.mp3')">
-            Smooth Jazz (KNTU)
-        </button>
-
-    </div>
-
-    <script>
-        // Find the <audio> element
-        var player = document.getElementById('radio_stream');
-        
-        // Find the <input> slider element
-        var volumeSlider = document.getElementById('volume_slider');
-
-        // Set default volume
-        player.volume = volumeSlider.value; // Get default from the slider's 'value'
-
-        // Add an event listener to the slider
-        volumeSlider.oninput = function() {
-            player.volume = this.value;
-        }
-
-        // This function is called by the buttons
-        function playStream(streamUrl) {
-            player.src = streamUrl;
-            player.load();
-            player.play().catch(function(error) {
-                console.log("Player error: ", error);
-            });
-        }
-    </script>
-
-</body>
-</html>
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1
