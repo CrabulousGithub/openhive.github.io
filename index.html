@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Radio Player</title>
+    <style>
+        body { 
+            background-color: #333; 
+            color: #FFF; 
+            font-family: Arial, sans-serif;
+            padding: 15px;
+        }
+        h1 {
+            color: #FFF;
+            border-bottom: 2px solid #555;
+            padding-bottom: 5px;
+        }
+        /* Style for the radio buttons */
+        .station-button {
+            display: block;
+            width: 90%;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 16px;
+            font-weight: bold;
+            color: #FFF;
+            background-color: #555;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .station-button:hover {
+            background-color: #777;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Server Radio</h1>
+    <p>Click a station to start playing. Type <strong>!stopradio</strong> in chat to close.</p>
+
+    <audio id="radio_stream" controls style="display:none;"></audio>
+
+    <div id="station-list">
+        
+        <button class="station-button" onclick="playStream('http://149.202.74.156:8008/stream')">
+            Beatles Radio
+        </button>
+
+        <button class="station-button" onclick="playStream('http://kexp-mp3-128.streamguys1.com/kexp128.mp3')">
+            KEXP (Alternative)
+        </button>
+
+        <button class="station-button" onclick="playStream('http://ice41.securenetsystems.net/CRF')">
+            Classic Rock Florida
+        </button>
+
+        </div>
+
+    <script>
+        // Find the <audio> element
+        var player = document.getElementById('radio_stream');
+        
+        // Set default volume (0.5 = 50%)
+        player.volume = 0.5;
+
+        // This function is called by the buttons
+        function playStream(streamUrl) {
+            // Set the audio player's source to the stream URL
+            player.src = streamUrl;
+            
+            // Tell the player to load and play the stream
+            player.load();
+            player.play().catch(function(error) {
+                console.log("Player error: ", error);
+            });
+        }
+    </script>
+
+</body>
+</html>
