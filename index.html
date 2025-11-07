@@ -13,6 +13,7 @@
             color: #FFF;
             border-bottom: 2px solid #555;
             padding-bottom: 5px;
+            margin-top: 0;
         }
         /* Style for the radio buttons */
         .station-button {
@@ -31,11 +32,30 @@
         .station-button:hover {
             background-color: #777;
         }
+        /* NEW: Styles for the volume slider */
+        .volume-container {
+            margin: 10px 0 20px 0;
+            display: flex;
+            align-items: center;
+        }
+        .volume-container label {
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        #volume_slider {
+            width: 70%; /* Make the slider take up most of the width */
+        }
     </style>
 </head>
 <body>
 
     <h1>Server Radio</h1>
+
+    <div class="volume-container">
+        <label for="volume_slider">Volume:</label>
+        <input type="range" id="volume_slider" min="0" max="1" step="0.01" value="0.5">
+    </div>
+
     <p>Click a station to start playing. Type <strong>!stopradio</strong> in chat to close.</p>
 
     <audio id="radio_stream" controls style="display:none;"></audio>
@@ -54,14 +74,23 @@
             Smooth Jazz
         </button>
 
-        </div>
+    </div>
 
     <script>
         // Find the <audio> element
         var player = document.getElementById('radio_stream');
         
-        // Set default volume (0.5 = 50%)
-        player.volume = 0.5;
+        // Find the <input> slider element
+        var volumeSlider = document.getElementById('volume_slider');
+
+        // Set default volume
+        player.volume = volumeSlider.value; // Get default from the slider's 'value'
+
+        // NEW: Add an event listener to the slider
+        // This function will run every time the slider is moved
+        volumeSlider.oninput = function() {
+            player.volume = this.value;
+        }
 
         // This function is called by the buttons
         function playStream(streamUrl) {
@@ -77,9 +106,6 @@
     </script>
 
 </body>
-
 </html>
-
-
 
 
