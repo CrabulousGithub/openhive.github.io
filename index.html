@@ -3,15 +3,16 @@
 <head>
     <title>Radio Player</title>
     <style>
+        /* Your new Dark-Mint theme */
         body { 
-            background-color: #333; 
+            background-color: #1A3A35; /* Dark mint-green background */
             color: #FFF; 
             font-family: Arial, sans-serif;
             padding: 15px;
         }
         h1 {
             color: #FFF;
-            border-bottom: 2px solid #555;
+            border-bottom: 2px solid #5C8C80; /* Lighter mint border */
             padding-bottom: 5px;
             margin-top: 0;
         }
@@ -24,15 +25,15 @@
             font-size: 16px;
             font-weight: bold;
             color: #FFF;
-            background-color: #555;
+            background-color: #3C6E64; /* Mint-green buttons */
             border: none;
             border-radius: 5px;
             cursor: pointer;
         }
         .station-button:hover {
-            background-color: #777;
+            background-color: #4C8C80; /* Lighter mint on hover */
         }
-        /* NEW: Styles for the volume slider */
+        /* Styles for the volume slider */
         .volume-container {
             margin: 10px 0 20px 0;
             display: flex;
@@ -43,7 +44,7 @@
             margin-right: 10px;
         }
         #volume_slider {
-            width: 70%; /* Make the slider take up most of the width */
+            width: 70%;
         }
     </style>
 </head>
@@ -70,8 +71,8 @@
             Liberty Radio
         </button>
 
-        <button class="station-button" onclick="playStream('http://us2.internet-radio.com:8443/stream?type=http&nocache=746')">
-            Smooth Jazz
+        <button class="station-button" onclick="playStream('https://dallas.stream.publicradio.org/kntu_jazz_64.mp3')">
+            Smooth Jazz (KNTU)
         </button>
 
     </div>
@@ -86,18 +87,14 @@
         // Set default volume
         player.volume = volumeSlider.value; // Get default from the slider's 'value'
 
-        // NEW: Add an event listener to the slider
-        // This function will run every time the slider is moved
+        // Add an event listener to the slider
         volumeSlider.oninput = function() {
             player.volume = this.value;
         }
 
         // This function is called by the buttons
         function playStream(streamUrl) {
-            // Set the audio player's source to the stream URL
             player.src = streamUrl;
-            
-            // Tell the player to load and play the stream
             player.load();
             player.play().catch(function(error) {
                 console.log("Player error: ", error);
@@ -107,6 +104,3 @@
 
 </body>
 </html>
-
-
-
