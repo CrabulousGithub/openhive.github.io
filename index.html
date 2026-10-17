@@ -1,177 +1,1205 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Radio Player</title>
-    <style>
-        /* Your Dark-Mint theme */
-        body { 
-            background-color: #1A3A35; /* Dark mint-green background */
-            color: #FFF; 
-            font-family: Arial, sans-serif;
-            padding: 15px;
-        }
-        h1 {
-            color: #FFF;
-            border-bottom: 2px solid #5C8C80; /* Lighter mint border */
-            padding-bottom: 5px;
-            margin-top: 0;
-        }
-        h2 {
-            margin-top: 30px;
-            border-bottom: 1px solid #5C8C80;
-            padding-bottom: 3px;
-        }
-        /* Style for the radio buttons */
-        .station-button {
-            display: block;
-            width: 90%;
-            padding: 15px;
-            margin: 10px 0;
-            font-size: 16px;
-            font-weight: bold;
-            color: #FFF;
-            background-color: #3C6E64; /* Mint-green buttons */
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .station-button:hover {
-            background-color: #4C8C80; /* Lighter mint on hover */
-        }
-        /* Styles for the volume slider */
-        .volume-container {
-            margin: 10px 0 20px 0;
-            display: flex;
-            align-items: center;
-        }
-        .volume-container label {
-            font-size: 14px;
-            margin-right: 10px;
-        }
-        #volume_slider {
-            width: 70%;
-        }
-        
-        /* Styles for the YouTube section */
-        .youtube-container {
-            margin-top: 20px;
-        }
-        .youtube-input {
-            width: 80%;
-            padding: 10px;
-            font-size: 14px;
-            border-radius: 5px;
-            border: 1px solid #5C8C80;
-            background-color: #112A25;
-            color: #FFF;
-        }
-        #youtube_iframe {
-            width: 90%;
-            aspect-ratio: 16 / 9; /* 16:9 widescreen video */
-            border: 2px solid #5C8C80;
-            border-radius: 5px;
-            margin-top: 15px;
-            background-color: #000; /* Black background while loading */
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenHive Jukebox & Radio</title>
+  <style>
+    :root {
+      --bg-deep: #070d0b;
+      --bg-panel: #0e1915;
+      --bg-card: #14241f;
+      --bg-card-hover: #1b312a;
+      --mint-primary: #2dd4bf;
+      --mint-bright: #00f5a0;
+      --mint-dim: #115e59;
+      --mint-glow: rgba(45, 212, 191, 0.18);
+      --text-main: #ecfdf5;
+      --text-muted: #86efac;
+      --text-dim: #5e8c7a;
+      --danger: #f87171;
+      --border: #1f3a32;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-deep);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(45, 212, 191, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(0, 245, 160, 0.05) 0%, transparent 40%);
+      color: var(--text-main);
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Header & Search Bar */
+    header {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 1.2rem;
+      letter-spacing: 0.5px;
+      color: var(--mint-bright);
+      text-shadow: 0 0 12px var(--mint-glow);
+      white-space: nowrap;
+    }
+
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--mint-bright);
+      box-shadow: 0 0 10px var(--mint-bright);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.25); opacity: 0.6; }
+    }
+
+    .search-bar {
+      display: flex;
+      flex: 1;
+      max-width: 520px;
+      gap: 8px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--mint-primary);
+      box-shadow: 0 0 0 2px var(--mint-glow);
+    }
+
+    .btn {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--mint-primary);
+      color: var(--mint-bright);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--mint-primary), #10b981);
+      color: #042f2e;
+      border: none;
+      font-weight: 700;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, var(--mint-bright), var(--mint-primary));
+      color: #022c22;
+      box-shadow: 0 0 12px var(--mint-glow);
+    }
+
+    /* Main Workspace */
+    .workspace {
+      display: grid;
+      grid-template-columns: 220px 1fr 300px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Left Sidebar Navigation */
+    .sidebar {
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+    }
+
+    .nav-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin: 10px 0 4px 6px;
+      font-weight: 700;
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-main);
+      text-align: left;
+      padding: 9px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: all 0.15s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-btn:hover {
+      background: var(--bg-card);
+      color: var(--mint-primary);
+    }
+
+    .nav-btn.active {
+      background: rgba(45, 212, 191, 0.12);
+      border-color: var(--mint-primary);
+      color: var(--mint-bright);
+      font-weight: 700;
+    }
+
+    .genre-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+      padding: 0 4px;
+    }
+
+    .chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .chip:hover {
+      border-color: var(--mint-primary);
+      color: var(--mint-bright);
+      background: var(--bg-card-hover);
+    }
+
+    /* Center Station / Track Browser */
+    .content-area {
+      padding: 16px 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--mint-bright);
+    }
+
+    .custom-url-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .station-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px;
+    }
+
+    .station-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .station-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--mint-primary);
+      transform: translateY(-1px);
+    }
+
+    .station-card.playing {
+      border-color: var(--mint-bright);
+      box-shadow: 0 0 14px var(--mint-glow);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .station-name {
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: var(--text-main);
+      line-height: 1.25;
+      word-break: break-word;
+    }
+
+    .station-meta {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 0.78rem;
+      flex: 1;
+      justify-content: center;
+    }
+
+    .fav-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 1.1rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px;
+    }
+
+    .fav-btn.active {
+      color: var(--mint-bright);
+      text-shadow: 0 0 8px var(--mint-bright);
+    }
+
+    /* Right Sidebar: Queue & Visualizer */
+    .queue-panel {
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .visualizer-box {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      height: 68px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 4px;
+      padding: 10px 14px;
+      overflow: hidden;
+    }
+
+    .vis-bar {
+      flex: 1;
+      background: linear-gradient(to top, var(--mint-dim), var(--mint-bright));
+      height: 12%;
+      border-radius: 2px 2px 0 0;
+      transition: height 0.12s ease;
+    }
+
+    .queue-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .queue-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+
+    .queue-item.active {
+      border-color: var(--mint-bright);
+      background: rgba(45, 212, 191, 0.12);
+    }
+
+    .queue-item-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    /* Bottom Player Deck */
+    .player-deck {
+      background: #060b09;
+      border-top: 1px solid var(--mint-dim);
+      padding: 12px 20px;
+      display: grid;
+      grid-template-columns: 280px 1fr 260px;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .now-playing {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      overflow: hidden;
+    }
+
+    .np-badge {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(0, 245, 160, 0.15);
+      color: var(--mint-bright);
+      width: fit-content;
+    }
+
+    .np-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .np-sub {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .deck-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .transport-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .seek-row {
+      width: 100%;
+      max-width: 460px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.74rem;
+      color: var(--text-dim);
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--mint-bright);
+      cursor: pointer;
+    }
+
+    .deck-right {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .status-toast {
+      position: fixed;
+      bottom: 85px;
+      right: 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--mint-primary);
+      color: var(--mint-bright);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 999;
+    }
+
+    .status-toast.visible {
+      opacity: 1;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-deep); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--mint-dim); }
+  </style>
 </head>
 <body>
 
-    <h1>Server Player</h1>
-
-    <h2><label for="volume_slider">Server Radio</label></h2>
-    <div class="volume-container">
-        <input type="range" id="volume_slider" min="0" max="1" step="0.01" value="0.5">
-    </div>
-    <p>Click a station to start playing. Type <strong>!stopradio</strong> in chat to close.</p>
-    <audio id="radio_stream" controls style="display:none;"></audio>
-    <div id="station-list">
-        <button class="station-button" onclick="playStream('https://rsa.streamabc.net/regc-rsasachsenbeatles9332348-aacplus-64-5150025')">
-            Beatles Radio
-        </button>
-        <button class="station-button" onclick="playStream('https://streams.freetalklive.com:8443/lrn64')">
-            Liberty Radio
-        </button>
-        <button class="station-button" onclick="playStream('https://dallas.stream.publicradio.org/kntu_jazz_64.mp3')">
-            Smooth Jazz (KNTU)
-        </button>
+  <!-- Top Bar -->
+  <header>
+    <div class="brand">
+      <div class="brand-dot" id="liveDot"></div>
+      <span>OPENHIVE // JUKEBOX</span>
     </div>
 
-    <h2>YouTube Player</h2>
-    <div class="youtube-container">
-        <input type="text" id="youtube_url" class="youtube-input" placeholder="Paste a YouTube URL...">
-        <button class="station-button" style="width:auto; padding: 10px 15px;" onclick="playYouTube()">
-            Play Video
-        </button>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search 30,000+ live radio stations or artists (e.g. Synthwave, Eurobeat, Jazz)..." />
+      <button class="btn btn-primary" onclick="searchGlobalStations()">Search</button>
     </div>
-    
-    <iframe id="youtube_iframe" src="about:blank" allow="autoplay; encrypted-media" allowfullscreen>
-    </iframe>
 
-    <script>
-        // Get the elements
-        var player = document.getElementById('radio_stream');
-        var volumeSlider = document.getElementById('volume_slider');
-        var youtubeFrame = document.getElementById('youtube_iframe');
-        var youtubeInput = document.getElementById('youtube_url');
+    <div style="font-size: 0.78rem; color: var(--text-dim);">
+      Tip: Close window to keep listening in-game! Use <b>!radio</b> for quick controls.
+    </div>
+  </header>
 
-        // --- Radio Functions ---
+  <!-- Main Workspace -->
+  <div class="workspace">
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+      <div class="nav-label">Library</div>
+      <button class="nav-btn active" id="nav-curated" onclick="switchTab('curated')">
+        <span>Curated & TF2 Mix</span>
+      </button>
+      <button class="nav-btn" id="nav-jukebox" onclick="switchTab('jukebox')">
+        <span>Jukebox Tracks</span>
+      </button>
+      <button class="nav-btn" id="nav-favorites" onclick="switchTab('favorites')">
+        <span>Saved Favorites</span>
+        <span id="favCount">0</span>
+      </button>
+      <button class="nav-btn" id="nav-search" onclick="switchTab('search')">
+        <span>Live Radio Search</span>
+      </button>
 
-        // Set default volume
-        player.volume = volumeSlider.value;
+      <div class="nav-label">Quick Genres (Live API)</div>
+      <div class="genre-chips">
+        <span class="chip" onclick="quickTag('synthwave')">Synthwave</span>
+        <span class="chip" onclick="quickTag('lofi')">Lo-Fi</span>
+        <span class="chip" onclick="quickTag('rock')">Rock</span>
+        <span class="chip" onclick="quickTag('metal')">Metal</span>
+        <span class="chip" onclick="quickTag('jazz')">Jazz</span>
+        <span class="chip" onclick="quickTag('electronic')">Electronic</span>
+        <span class="chip" onclick="quickTag('chiptune')">Chiptune</span>
+        <span class="chip" onclick="quickTag('vaporwave')">Vaporwave</span>
+        <span class="chip" onclick="quickTag('hiphop')">Hip-Hop</span>
+        <span class="chip" onclick="quickTag('classical')">Classical</span>
+      </div>
+    </aside>
 
-        // Add an event listener to the slider
-        volumeSlider.oninput = function() {
-            player.volume = this.value;
+    <!-- Center Content -->
+    <main class="content-area">
+      <!-- Custom Direct Stream / MP3 Loader -->
+      <div class="custom-url-box">
+        <input type="text" id="customNameInput" placeholder="Custom Title (Optional)" style="max-width: 180px;" />
+        <input type="text" id="customUrlInput" placeholder="Paste direct .mp3 / .ogg / Icecast stream URL..." />
+        <button class="btn" onclick="addCustomUrl(false)">+ Queue</button>
+        <button class="btn btn-primary" onclick="addCustomUrl(true)">Play URL</button>
+      </div>
+
+      <div class="section-header">
+        <div class="section-title" id="sectionTitle">Curated Server Stations</div>
+        <div style="font-size: 0.8rem; color: var(--text-dim);" id="resultCount">Ready</div>
+      </div>
+
+      <div class="station-grid" id="stationGrid"></div>
+    </main>
+
+    <!-- Right Sidebar: Visualizer & Active Queue -->
+    <aside class="queue-panel">
+      <div class="nav-label" style="margin-top:0;">Mint Spectrum</div>
+      <div class="visualizer-box" id="visualizer"></div>
+
+      <div class="section-header">
+        <div class="section-title" style="font-size:0.9rem;">Up Next Queue</div>
+        <button class="btn" style="padding: 3px 8px; font-size:0.72rem;" onclick="clearQueue()">Clear</button>
+      </div>
+      <div class="queue-list" id="queueList"></div>
+    </aside>
+  </div>
+
+  <!-- Bottom Player Deck -->
+  <footer class="player-deck">
+    <div class="now-playing">
+      <span class="np-badge" id="npBadge">IDLE</span>
+      <div class="np-title" id="npTitle">No Station Selected</div>
+      <div class="np-sub" id="npSub">Pick a station or use !radio in chat</div>
+    </div>
+
+    <div class="deck-center">
+      <div class="transport-controls">
+        <button class="btn" id="shuffleBtn" onclick="toggleShuffle()" title="Shuffle Queue">Shuffle: OFF</button>
+        <button class="btn" onclick="playPrev()">&#9664;&#9664;</button>
+        <button class="btn btn-primary" id="playPauseBtn" onclick="togglePlayPause()" style="min-width: 90px; justify-content: center;">&#9654; Play</button>
+        <button class="btn" onclick="playNext()">&#9654;&#9654;</button>
+        <button class="btn" onclick="stopPlayback()" style="color: var(--danger);">Stop</button>
+      </div>
+      <div class="seek-row">
+        <span id="curTime">0:00</span>
+        <input type="range" id="seekSlider" min="0" max="100" value="0" oninput="seekAudio(this.value)" />
+        <span id="durTime">LIVE</span>
+      </div>
+    </div>
+
+    <div class="deck-right">
+      <span style="font-size: 0.8rem; color: var(--text-muted);">VOL</span>
+      <input type="range" id="volSlider" min="0" max="100" value="60" oninput="setVolume(this.value)" style="max-width: 120px;" />
+      <span id="volLabel" style="font-size: 0.8rem; width: 34px;">60%</span>
+    </div>
+  </footer>
+
+  <div class="status-toast" id="toast">Command Received</div>
+  <audio id="audioPlayer" preload="none"></audio>
+
+  <script>
+    // --- 1. Built-in Curated Stations & Jukebox Tracks ---
+    const CURATED_STATIONS = [
+      { id: 'c1', name: 'Nightride FM (Synthwave)', url: 'https://stream.nightride.fm/nightride.m4a', genre: 'Synthwave / Cyberpunk', isLive: true },
+      { id: 'c2', name: 'Chillsynth FM', url: 'https://stream.nightride.fm/chillsynth.m4a', genre: 'Chill / Retro', isLive: true },
+      { id: 'c3', name: 'SomaFM: Groove Salad', url: 'https://ice2.somafm.com/groovesalad-128-mp3', genre: 'Ambient / Downtempo', isLive: true },
+      { id: 'c4', name: 'SomaFM: DEF CON Radio', url: 'https://ice2.somafm.com/defcon-128-mp3', genre: 'Hacker / Electronic', isLive: true },
+      { id: 'c5', name: 'SomaFM: Metal Detector', url: 'https://ice2.somafm.com/metal-128-mp3', genre: 'Heavy Metal', isLive: true },
+      { id: 'c6', name: 'Plaza One (Vaporwave)', url: 'https://radio.plaza.one/mp3', genre: 'Vaporwave / Aesthetics', isLive: true },
+      { id: 'c7', name: 'Datawave FM', url: 'https://stream.nightride.fm/datawave.m4a', genre: 'IDM / Electro', isLive: true },
+      { id: 'c8', name: 'SomaFM: Secret Agent', url: 'https://ice2.somafm.com/secretagent-128-mp3', genre: 'Spy Jazz / Lounge', isLive: true }
+    ];
+
+    const JUKEBOX_TRACKS = [
+      { id: 'j1', name: 'Cybernetic Horizon (Loop Mix)', url: 'https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3', genre: 'Arcade / Action', isLive: false },
+      { id: 'j2', name: 'Retro Chiptune Runner', url: 'https://codeskulptor-demos.commondatastorage.googleapis.com/pang/paza-moduless.mp3', genre: 'Chiptune / Upbeat', isLive: false },
+      { id: 'j3', name: 'Dark Mint Overdrive', url: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg', genre: 'Electronic / Chill', isLive: false }
+    ];
+
+    // Radio Browser API Mirrors for high availability
+    const API_MIRRORS = [
+      'https://de1.api.radio-browser.info/json/stations/search',
+      'https://fi1.api.radio-browser.info/json/stations/search',
+      'https://at1.api.radio-browser.info/json/stations/search'
+    ];
+
+    // --- 2. State Management ---
+    const audio = document.getElementById('audioPlayer');
+    let state = {
+      activeTab: 'curated',
+      currentItem: null,
+      queue: [...CURATED_STATIONS],
+      queueIndex: 0,
+      favorites: [],
+      searchResults: [],
+      volume: 60,
+      shuffle: false,
+      isPlaying: false
+    };
+
+    // Build Visualizer Bars
+    const visContainer = document.getElementById('visualizer');
+    const VIS_BAR_COUNT = 22;
+    for (let i = 0; i < VIS_BAR_COUNT; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'vis-bar';
+      visContainer.appendChild(bar);
+    }
+    const visBars = document.querySelectorAll('.vis-bar');
+
+    // --- 3. Initialization & LocalStorage Restore ---
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedState();
+      renderQueue();
+      switchTab(state.activeTab || 'curated');
+
+      // Enter key in search input
+      document.getElementById('searchInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') searchGlobalStations();
+      });
+
+      // Handle initial query or hash parameters from SourceMod
+      checkInitialUrlParams();
+
+      // Listen for non-resetting hash commands from SourceMod (!radio)
+      window.addEventListener('hashchange', handleHashCommand);
+
+      // Periodic state checkpoint & visualizer animation
+      setInterval(saveCheckpoint, 1000);
+      setInterval(updateVisualizer, 130);
+    });
+
+    function loadSavedState() {
+      try {
+        const savedFavs = localStorage.getItem('openhive_favs');
+        if (savedFavs) state.favorites = JSON.parse(savedFavs);
+
+        const savedCheckpoint = localStorage.getItem('openhive_state');
+        if (savedCheckpoint) {
+          const parsed = JSON.parse(savedCheckpoint);
+          if (typeof parsed.volume === 'number') state.volume = parsed.volume;
+          if (Array.isArray(parsed.queue) && parsed.queue.length > 0) state.queue = parsed.queue;
+          if (typeof parsed.queueIndex === 'number') state.queueIndex = parsed.queueIndex;
+          if (typeof parsed.shuffle === 'boolean') state.shuffle = parsed.shuffle;
+          if (parsed.currentItem) state.currentItem = parsed.currentItem;
+
+          setVolume(state.volume, true);
+          document.getElementById('shuffleBtn').textContent = `Shuffle: ${state.shuffle ? 'ON' : 'OFF'}`;
+
+          // Auto-resume if it was playing right before a window refresh
+          if (parsed.isPlaying && parsed.currentItem && !window.location.hash.includes('cmd=')) {
+            playItem(parsed.currentItem, false, parsed.currentTime || 0);
+          } else if (parsed.currentItem) {
+            updateNowPlayingUI(parsed.currentItem, false);
+          }
+        } else {
+          setVolume(60, true);
         }
+        updateFavCount();
+      } catch (e) {
+        console.warn('State restore warning:', e);
+      }
+    }
 
-        // This function is called by the radio station buttons
-        function playStream(streamUrl) {
-            // STOP the YouTube video by loading a blank page
-            youtubeFrame.src = 'about:blank';
-            
-            // Play the radio stream
-            player.src = streamUrl;
-            player.load();
-            player.play().catch(function(error) {
-                console.log("Player error: ", error);
-            });
+    function saveCheckpoint() {
+      try {
+        const payload = {
+          currentItem: state.currentItem,
+          queue: state.queue.slice(0, 50),
+          queueIndex: state.queueIndex,
+          volume: state.volume,
+          shuffle: state.shuffle,
+          isPlaying: !audio.paused,
+          currentTime: audio.currentTime || 0
+        };
+        localStorage.setItem('openhive_state', JSON.stringify(payload));
+      } catch (e) {}
+    }
+
+    // --- 4. SourceMod Hash Command Engine (No-Reset Control) ---
+    function checkInitialUrlParams() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const streamParam = urlParams.get('stream');
+      if (streamParam) {
+        playItem({
+          id: 'sm_stream',
+          name: 'Server Radio Stream',
+          url: streamParam,
+          genre: 'Server Broadcast',
+          isLive: true
+        });
+      }
+      if (window.location.hash) {
+        handleHashCommand();
+      }
+    }
+
+    function handleHashCommand() {
+      const hash = window.location.hash.substring(1);
+      if (!hash) return;
+      const params = new URLSearchParams(hash);
+      const cmd = params.get('cmd');
+      const val = params.get('val');
+
+      if (!cmd) return;
+
+      switch (cmd.toLowerCase()) {
+        case 'vol':
+        case 'volume': {
+          const v = Math.max(0, Math.min(100, parseInt(val, 10) || 50));
+          setVolume(v, true);
+          showToast(`Volume set to ${v}%`);
+          break;
         }
-
-        // --- YouTube Functions ---
-
-        // This function is called by the "Play Video" button
-        function playYouTube() {
-            // STOP the radio stream
-            player.pause();
-            player.src = '';
-            
-            // Get the URL from the input box
-            var videoUrl = youtubeInput.value;
-            var videoId = parseYouTubeId(videoUrl);
-            
-            if (videoId) {
-                // Construct the *embed* URL
-                // *** THIS LINE IS UPDATED ***
-                var embedUrl = "https://www.youtube.com/embed/" + videoId + "?autoplay=1&mute=1";
-                youtubeFrame.src = embedUrl;
-            } else {
-                alert("Invalid YouTube URL. Please use a 'youtube.com/watch?v=' or 'youtu.be/' link.");
-            }
+        case 'next':
+        case 'skip':
+          playNext();
+          showToast('Skipped to next station/track');
+          break;
+        case 'prev':
+          playPrev();
+          showToast('Previous station/track');
+          break;
+        case 'toggle':
+        case 'pause':
+          togglePlayPause();
+          showToast(audio.paused ? 'Playback Paused' : 'Playback Resumed');
+          break;
+        case 'stop':
+          stopPlayback();
+          showToast('Playback Stopped');
+          break;
+        case 'preset': {
+          const idx = (parseInt(val, 10) || 1) - 1;
+          if (CURATED_STATIONS[idx]) {
+            playItem(CURATED_STATIONS[idx]);
+            showToast(`Playing Preset: ${CURATED_STATIONS[idx].name}`);
+          }
+          break;
         }
-        
-        // Helper function to get the ID from a YouTube URL
-        function parseYouTubeId(url) {
-            var regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            var match = url.match(regExp);
+        case 'url':
+          if (val) {
+            const name = params.get('name') || 'Custom In-Game Stream';
+            playItem({ id: 'custom_' + Date.now(), name, url: val, genre: 'Custom Stream', isLive: true });
+            showToast(`Playing: ${name}`);
+          }
+          break;
+        case 'search':
+          if (val) {
+            document.getElementById('searchInput').value = val;
+            searchGlobalStations(true);
+            showToast(`Searching & Auto-Playing: ${val}`);
+          }
+          break;
+        case 'open':
+          // Just brings the UI into view without resetting audio!
+          break;
+      }
+    }
 
-            if (match && match[2].length == 11) {
-                return match[2];
-            } else {
-                return null;
-            }
+    // --- 5. Audio Playback & Queue Logic ---
+    function playItem(item, addToQueueIfMissing = true, seekTo = 0) {
+      if (!item || !item.url) return;
+
+      // Avoid restarting if the exact same stream is already actively playing
+      if (state.currentItem && state.currentItem.url === item.url && !audio.paused && seekTo === 0) {
+        return;
+      }
+
+      state.currentItem = item;
+      if (addToQueueIfMissing) {
+        const existingIdx = state.queue.findIndex(q => q.url === item.url);
+        if (existingIdx === -1) {
+          state.queue.push(item);
+          state.queueIndex = state.queue.length - 1;
+        } else {
+          state.queueIndex = existingIdx;
         }
-    </script>
+      }
 
+      audio.src = item.url;
+      audio.volume = state.volume / 100;
+      audio.play().then(() => {
+        state.isPlaying = true;
+        if (seekTo > 0 && !item.isLive) {
+          audio.currentTime = seekTo;
+        }
+        updateNowPlayingUI(item, true);
+        renderQueue();
+        renderCurrentGrid();
+      }).catch(err => {
+        console.warn('Playback error:', err);
+        showToast('Stream unavailable or blocked; trying next...');
+      });
+    }
+
+    function togglePlayPause() {
+      if (!state.currentItem) {
+        if (state.queue.length > 0) playItem(state.queue[0]);
+        else playItem(CURATED_STATIONS[0]);
+        return;
+      }
+      if (audio.paused) {
+        audio.play();
+        state.isPlaying = true;
+      } else {
+        audio.pause();
+        state.isPlaying = false;
+      }
+      updateNowPlayingUI(state.currentItem, !audio.paused);
+    }
+
+    function stopPlayback() {
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+      state.isPlaying = false;
+      updateNowPlayingUI(state.currentItem, false);
+    }
+
+    function playNext() {
+      if (state.queue.length === 0) return;
+      if (state.shuffle) {
+        state.queueIndex = Math.floor(Math.random() * state.queue.length);
+      } else {
+        state.queueIndex = (state.queueIndex + 1) % state.queue.length;
+      }
+      playItem(state.queue[state.queueIndex], false);
+    }
+
+    function playPrev() {
+      if (state.queue.length === 0) return;
+      state.queueIndex = (state.queueIndex - 1 + state.queue.length) % state.queue.length;
+      playItem(state.queue[state.queueIndex], false);
+    }
+
+    function toggleShuffle() {
+      state.shuffle = !state.shuffle;
+      document.getElementById('shuffleBtn').textContent = `Shuffle: ${state.shuffle ? 'ON' : 'OFF'}`;
+    }
+
+    function setVolume(val, updateSlider = false) {
+      const v = Math.max(0, Math.min(100, Number(val)));
+      state.volume = v;
+      audio.volume = v / 100;
+      document.getElementById('volLabel').textContent = `${v}%`;
+      if (updateSlider) {
+        document.getElementById('volSlider').value = v;
+      }
+    }
+
+    function seekAudio(percent) {
+      if (audio.duration && isFinite(audio.duration)) {
+        audio.currentTime = (percent / 100) * audio.duration;
+      }
+    }
+
+    audio.addEventListener('timeupdate', () => {
+      const curEl = document.getElementById('curTime');
+      const durEl = document.getElementById('durTime');
+      const slider = document.getElementById('seekSlider');
+
+      curEl.textContent = formatSeconds(audio.currentTime);
+      if (audio.duration && isFinite(audio.duration)) {
+        durEl.textContent = formatSeconds(audio.duration);
+        slider.value = (audio.currentTime / audio.duration) * 100;
+      } else {
+        durEl.textContent = 'LIVE';
+        slider.value = 100;
+      }
+    });
+
+    audio.addEventListener('ended', () => {
+      playNext();
+    });
+
+    function formatSeconds(sec) {
+      if (!sec || isNaN(sec)) return '0:00';
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    // --- 6. Live Radio Browser API Search ---
+    async function searchGlobalStations(autoPlayFirst = false) {
+      const query = document.getElementById('searchInput').value.trim();
+      if (!query) return;
+
+      switchTab('search');
+      document.getElementById('resultCount').textContent = 'Searching global directory...';
+
+      const params = new URLSearchParams({
+        name: query,
+        limit: '36',
+        hidebroken: 'true',
+        order: 'clickcount',
+        reverse: 'true'
+      });
+
+      await fetchStationsFromMirrors(params, `Search: "${query}"`, autoPlayFirst);
+    }
+
+    async function quickTag(tag) {
+      switchTab('search');
+      document.getElementById('resultCount').textContent = `Loading top ${tag} stations...`;
+
+      const params = new URLSearchParams({
+        tag: tag,
+        limit: '36',
+        hidebroken: 'true',
+        order: 'clickcount',
+        reverse: 'true'
+      });
+
+      await fetchStationsFromMirrors(params, `Genre: ${tag.toUpperCase()}`, false);
+    }
+
+    async function fetchStationsFromMirrors(params, titleText, autoPlayFirst) {
+      document.getElementById('sectionTitle').textContent = titleText;
+
+      for (const mirror of API_MIRRORS) {
+        try {
+          const res = await fetch(`${mirror}?${params.toString()}`);
+          if (!res.ok) continue;
+          const data = await res.json();
+
+          state.searchResults = data
+            .filter(st => st.url_resolved)
+            .map(st => ({
+              id: st.stationuuid,
+              name: st.name.trim() || 'Unnamed Station',
+              url: st.url_resolved,
+              genre: `${st.countrycode || 'GLOBAL'} • ${st.codec || 'MP3'} ${st.bitrate ? st.bitrate + 'k' : ''}`.trim(),
+              isLive: true
+            }));
+
+          document.getElementById('resultCount').textContent = `${state.searchResults.length} stations found`;
+          renderStationCards(state.searchResults);
+
+          if (autoPlayFirst && state.searchResults.length > 0) {
+            playItem(state.searchResults[0]);
+          }
+          return;
+        } catch (err) {
+          console.warn('Mirror failed, trying next:', mirror);
+        }
+      }
+      document.getElementById('resultCount').textContent = 'Search error (check connection)';
+    }
+
+    // --- 7. UI Rendering & Favorites ---
+    function switchTab(tab) {
+      state.activeTab = tab;
+      ['curated', 'jukebox', 'favorites', 'search'].forEach(t => {
+        const el = document.getElementById(`nav-${t}`);
+        if (el) el.classList.toggle('active', t === tab);
+      });
+      renderCurrentGrid();
+    }
+
+    function renderCurrentGrid() {
+      const titleEl = document.getElementById('sectionTitle');
+      const countEl = document.getElementById('resultCount');
+
+      if (state.activeTab === 'curated') {
+        titleEl.textContent = 'Curated & TF2 Mix Stations';
+        countEl.textContent = `${CURATED_STATIONS.length} Presets`;
+        renderStationCards(CURATED_STATIONS);
+      } else if (state.activeTab === 'jukebox') {
+        titleEl.textContent = 'Jukebox Tracks (On-Demand Audio)';
+        countEl.textContent = `${JUKEBOX_TRACKS.length} Tracks`;
+        renderStationCards(JUKEBOX_TRACKS);
+      } else if (state.activeTab === 'favorites') {
+        titleEl.textContent = 'Your Saved Favorites';
+        countEl.textContent = `${state.favorites.length} Saved`;
+        renderStationCards(state.favorites);
+      } else if (state.activeTab === 'search') {
+        renderStationCards(state.searchResults);
+      }
+    }
+
+    function renderStationCards(list) {
+      const grid = document.getElementById('stationGrid');
+      grid.innerHTML = '';
+
+      if (!list || list.length === 0) {
+        grid.innerHTML = `<div style="color:var(--text-dim); padding: 12px;">No stations or tracks in this view yet. Use the search bar above!</div>`;
+        return;
+      }
+
+      list.forEach(item => {
+        const isPlayingThis = state.currentItem && state.currentItem.url === item.url && !audio.paused;
+        const isFav = state.favorites.some(f => f.url === item.url);
+
+        const card = document.createElement('div');
+        card.className = `station-card ${isPlayingThis ? 'playing' : ''}`;
+
+        card.innerHTML = `
+          <div>
+            <div class="card-top">
+              <div class="station-name"></div>
+              <button class="fav-btn ${isFav ? 'active' : ''}" title="Save to Favorites">&#9733;</button>
+            </div>
+            <div class="station-meta"></div>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-primary btn-sm play-btn">${isPlayingThis ? 'Playing' : '&#9654; Play'}</button>
+            <button class="btn btn-sm queue-btn">+ Queue</button>
+          </div>
+        `;
+
+        card.querySelector('.station-name').textContent = item.name;
+        card.querySelector('.station-meta').textContent = item.genre || (item.isLive ? 'Live Stream' : 'Audio Track');
+
+        card.querySelector('.play-btn').addEventListener('click', () => playItem(item));
+        card.querySelector('.queue-btn').addEventListener('click', () => {
+          state.queue.push(item);
+          renderQueue();
+          showToast(`Added "${item.name}" to Queue`);
+        });
+        card.querySelector('.fav-btn').addEventListener('click', () => toggleFavorite(item));
+
+        grid.appendChild(card);
+      });
+    }
+
+    function renderQueue() {
+      const container = document.getElementById('queueList');
+      container.innerHTML = '';
+
+      state.queue.forEach((item, idx) => {
+        const isCurrent = state.currentItem && state.currentItem.url === item.url;
+        const row = document.createElement('div');
+        row.className = `queue-item ${isCurrent ? 'active' : ''}`;
+
+        const titleSpan = document.createElement('div');
+        titleSpan.className = 'queue-item-title';
+        titleSpan.textContent = `${idx + 1}. ${item.name}`;
+        titleSpan.addEventListener('click', () => {
+          state.queueIndex = idx;
+          playItem(item, false);
+        });
+
+        const delBtn = document.createElement('span');
+        delBtn.textContent = '✕';
+        delBtn.style.color = 'var(--text-dim)';
+        delBtn.style.padding = '0 4px';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          state.queue.splice(idx, 1);
+          renderQueue();
+        });
+
+        row.appendChild(titleSpan);
+        row.appendChild(delBtn);
+        container.appendChild(row);
+      });
+    }
+
+    function clearQueue() {
+      state.queue = [];
+      renderQueue();
+      showToast('Queue Cleared');
+    }
+
+    function addCustomUrl(playImmediately) {
+      const nameInput = document.getElementById('customNameInput');
+      const urlInput = document.getElementById('customUrlInput');
+      const url = urlInput.value.trim();
+      if (!url) return;
+
+      const item = {
+        id: 'usr_' + Date.now(),
+        name: nameInput.value.trim() || url.split('/').pop() || 'Custom Audio Stream',
+        url: url,
+        genre: 'Custom URL',
+        isLive: false
+      };
+
+      state.queue.push(item);
+      renderQueue();
+      if (playImmediately) {
+        playItem(item, false);
+      } else {
+        showToast('Added custom URL to Queue');
+      }
+      nameInput.value = '';
+      urlInput.value = '';
+    }
+
+    function toggleFavorite(item) {
+      const idx = state.favorites.findIndex(f => f.url === item.url);
+      if (idx === -1) {
+        state.favorites.push(item);
+        showToast(`Saved "${item.name}" to Favorites`);
+      } else {
+        state.favorites.splice(idx, 1);
+        showToast(`Removed from Favorites`);
+      }
+      localStorage.setItem('openhive_favs', JSON.stringify(state.favorites));
+      updateFavCount();
+      renderCurrentGrid();
+    }
+
+    function updateFavCount() {
+      document.getElementById('favCount').textContent = state.favorites.length;
+    }
+
+    function updateNowPlayingUI(item, playing) {
+      const badge = document.getElementById('npBadge');
+      const title = document.getElementById('npTitle');
+      const sub = document.getElementById('npSub');
+      const btn = document.getElementById('playPauseBtn');
+
+      if (!item) return;
+
+      badge.textContent = playing ? (item.isLive ? 'LIVE ON AIR' : 'PLAYING TRACK') : 'PAUSED';
+      title.textContent = item.name;
+      sub.textContent = item.genre || 'OpenHive Audio';
+      btn.innerHTML = playing ? '&#10074;&#10074; Pause' : '&#9654; Play';
+    }
+
+    function updateVisualizer() {
+      const playing = !audio.paused && state.isPlaying;
+      visBars.forEach((bar, i) => {
+        if (!playing) {
+          bar.style.height = '10%';
+        } else {
+          const wave = Math.sin(Date.now() / 180 + i * 0.6) * 35 + 45;
+          const jitter = Math.random() * 25;
+          bar.style.height = `${Math.min(100, Math.max(12, wave + jitter))}%`;
+        }
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => toast.classList.remove('visible'), 2500);
+    }
+  </script>
 </body>
 </html>
