@@ -3,22 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OpenHive Jukebox & Radio</title>
+  <title>OpenHive // Shoutcast & Server YouTube Sync</title>
+  <!-- Lightweight MQTT over WebSockets for instant Web-UI-to-Server-Clients Queue Sync -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <style>
     :root {
-      --bg-deep: #070d0b;
-      --bg-panel: #0e1915;
-      --bg-card: #14241f;
-      --bg-card-hover: #1b312a;
+      --bg-deep: #060c0a;
+      --bg-panel: #0c1713;
+      --bg-card: #12221d;
+      --bg-card-hover: #193029;
       --mint-primary: #2dd4bf;
       --mint-bright: #00f5a0;
       --mint-dim: #115e59;
-      --mint-glow: rgba(45, 212, 191, 0.18);
+      --mint-glow: rgba(0, 245, 160, 0.18);
       --text-main: #ecfdf5;
       --text-muted: #86efac;
-      --text-dim: #5e8c7a;
+      --text-dim: #588574;
       --danger: #f87171;
-      --border: #1f3a32;
+      --warning: #fbbf24;
+      --border: #1d362e;
     }
 
     * {
@@ -30,9 +33,9 @@
 
     body {
       background-color: var(--bg-deep);
-      background-image: 
-        radial-gradient(circle at 15% 15%, rgba(45, 212, 191, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 85% 85%, rgba(0, 245, 160, 0.05) 0%, transparent 40%);
+      background-image:
+        radial-gradient(circle at 12% 18%, rgba(45, 212, 191, 0.08) 0%, transparent 42%),
+        radial-gradient(circle at 88% 82%, rgba(0, 245, 160, 0.06) 0%, transparent 42%);
       color: var(--text-main);
       font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       height: 100vh;
@@ -41,15 +44,15 @@
       overflow: hidden;
     }
 
-    /* Top Header & Search Bar */
+    /* Top Header */
     header {
       background: var(--bg-panel);
       border-bottom: 1px solid var(--border);
-      padding: 12px 20px;
+      padding: 10px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 14px;
     }
 
     .brand {
@@ -57,8 +60,8 @@
       align-items: center;
       gap: 10px;
       font-weight: 800;
-      font-size: 1.2rem;
-      letter-spacing: 0.5px;
+      font-size: 1.15rem;
+      letter-spacing: 0.6px;
       color: var(--mint-bright);
       text-shadow: 0 0 12px var(--mint-glow);
       white-space: nowrap;
@@ -75,29 +78,40 @@
 
     @keyframes pulse {
       0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.25); opacity: 0.6; }
+      50% { transform: scale(1.25); opacity: 0.55; }
     }
 
-    .search-bar {
+    .sync-pill {
       display: flex;
-      flex: 1;
-      max-width: 520px;
+      align-items: center;
       gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
     }
 
-    input[type="text"] {
-      flex: 1;
+    .sync-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--mint-bright);
+    }
+
+    input[type="text"], select {
       background: var(--bg-deep);
       border: 1px solid var(--border);
       color: var(--text-main);
-      padding: 8px 14px;
+      padding: 8px 12px;
       border-radius: 6px;
-      font-size: 0.9rem;
+      font-size: 0.86rem;
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
 
-    input[type="text"]:focus {
+    input[type="text"]:focus, select:focus {
       border-color: var(--mint-primary);
       box-shadow: 0 0 0 2px var(--mint-glow);
     }
@@ -106,10 +120,10 @@
       background: var(--bg-card);
       color: var(--text-main);
       border: 1px solid var(--border);
-      padding: 8px 14px;
+      padding: 7px 13px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 600;
       transition: all 0.15s ease;
       display: inline-flex;
@@ -126,26 +140,26 @@
 
     .btn-primary {
       background: linear-gradient(135deg, var(--mint-primary), #10b981);
-      color: #042f2e;
+      color: #03221c;
       border: none;
       font-weight: 700;
     }
 
     .btn-primary:hover {
       background: linear-gradient(135deg, var(--mint-bright), var(--mint-primary));
-      color: #022c22;
+      color: #021a15;
       box-shadow: 0 0 12px var(--mint-glow);
     }
 
-    /* Main Workspace */
+    /* Main 3-Column Layout */
     .workspace {
       display: grid;
-      grid-template-columns: 220px 1fr 300px;
+      grid-template-columns: 225px 1fr 330px;
       flex: 1;
       overflow: hidden;
     }
 
-    /* Left Sidebar Navigation */
+    /* Left Navigation */
     .sidebar {
       background: var(--bg-panel);
       border-right: 1px solid var(--border);
@@ -157,7 +171,7 @@
     }
 
     .nav-label {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 1px;
       color: var(--text-dim);
@@ -173,7 +187,7 @@
       padding: 9px 12px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       font-weight: 500;
       transition: all 0.15s;
       display: flex;
@@ -187,16 +201,25 @@
     }
 
     .nav-btn.active {
-      background: rgba(45, 212, 191, 0.12);
+      background: rgba(45, 212, 191, 0.14);
       border-color: var(--mint-primary);
       color: var(--mint-bright);
       font-weight: 700;
     }
 
+    .badge-count {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      color: var(--mint-bright);
+      padding: 1px 7px;
+      border-radius: 99px;
+      font-size: 0.72rem;
+    }
+
     .genre-chips {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 5px;
       margin-top: 4px;
       padding: 0 4px;
     }
@@ -207,7 +230,7 @@
       color: var(--text-muted);
       padding: 4px 9px;
       border-radius: 999px;
-      font-size: 0.75rem;
+      font-size: 0.73rem;
       cursor: pointer;
       transition: all 0.15s;
     }
@@ -218,13 +241,24 @@
       background: var(--bg-card-hover);
     }
 
-    /* Center Station / Track Browser */
+    /* Center Content View */
     .content-area {
       padding: 16px 20px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 14px;
+    }
+
+    .toolbar-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
     }
 
     .section-header {
@@ -236,24 +270,14 @@
     }
 
     .section-title {
-      font-size: 1.05rem;
+      font-size: 1rem;
       font-weight: 700;
       color: var(--mint-bright);
     }
 
-    .custom-url-box {
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
     .station-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
       gap: 10px;
     }
 
@@ -267,7 +291,6 @@
       justify-content: space-between;
       gap: 10px;
       transition: all 0.15s ease;
-      position: relative;
     }
 
     .station-card:hover {
@@ -290,16 +313,28 @@
 
     .station-name {
       font-weight: 700;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       color: var(--text-main);
       line-height: 1.25;
       word-break: break-word;
     }
 
     .station-meta {
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       color: var(--text-dim);
       margin-top: 4px;
+    }
+
+    .slot-badge {
+      display: inline-block;
+      background: rgba(0, 245, 160, 0.12);
+      border: 1px solid var(--mint-dim);
+      color: var(--mint-bright);
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-bottom: 4px;
     }
 
     .card-actions {
@@ -310,7 +345,7 @@
 
     .btn-sm {
       padding: 5px 10px;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       flex: 1;
       justify-content: center;
     }
@@ -319,7 +354,7 @@
       background: transparent;
       border: none;
       color: var(--text-dim);
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       cursor: pointer;
       line-height: 1;
       padding: 2px;
@@ -330,36 +365,46 @@
       text-shadow: 0 0 8px var(--mint-bright);
     }
 
-    /* Right Sidebar: Queue & Visualizer */
+    /* Right Panel: Server YouTube Sync Player & Shared Queue */
     .queue-panel {
       background: var(--bg-panel);
       border-left: 1px solid var(--border);
       padding: 14px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       overflow: hidden;
     }
 
-    .visualizer-box {
-      background: var(--bg-deep);
+    .yt-viewport-wrapper {
+      background: #000;
       border: 1px solid var(--border);
       border-radius: 8px;
-      height: 68px;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      gap: 4px;
-      padding: 10px 14px;
       overflow: hidden;
+      height: 165px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .vis-bar {
-      flex: 1;
-      background: linear-gradient(to top, var(--mint-dim), var(--mint-bright));
-      height: 12%;
-      border-radius: 2px 2px 0 0;
-      transition: height 0.12s ease;
+    #ytPlayerContainer {
+      width: 100%;
+      height: 100%;
+    }
+
+    .yt-overlay-tag {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: rgba(6, 12, 10, 0.85);
+      border: 1px solid var(--mint-primary);
+      color: var(--mint-bright);
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      pointer-events: none;
     }
 
     .queue-list {
@@ -379,29 +424,38 @@
       justify-content: space-between;
       align-items: center;
       gap: 8px;
-      font-size: 0.82rem;
-      cursor: pointer;
+      font-size: 0.8rem;
     }
 
     .queue-item.active {
       border-color: var(--mint-bright);
-      background: rgba(45, 212, 191, 0.12);
+      background: rgba(45, 212, 191, 0.13);
     }
 
-    .queue-item-title {
+    .queue-item-info {
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
       flex: 1;
     }
 
-    /* Bottom Player Deck */
+    .queue-item-title {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .queue-item-sub {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+
+    /* Bottom Deck */
     .player-deck {
-      background: #060b09;
+      background: #040907;
       border-top: 1px solid var(--mint-dim);
-      padding: 12px 20px;
+      padding: 10px 20px;
       display: grid;
-      grid-template-columns: 280px 1fr 260px;
+      grid-template-columns: 290px 1fr 270px;
       align-items: center;
       gap: 16px;
     }
@@ -409,13 +463,13 @@
     .now-playing {
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 2px;
       overflow: hidden;
     }
 
     .np-badge {
       display: inline-block;
-      font-size: 0.68rem;
+      font-size: 0.66rem;
       font-weight: 800;
       text-transform: uppercase;
       padding: 2px 6px;
@@ -427,15 +481,18 @@
 
     .np-title {
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
     .np-sub {
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .deck-center {
@@ -448,7 +505,7 @@
     .transport-controls {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .seek-row {
@@ -476,7 +533,7 @@
 
     .status-toast {
       position: fixed;
-      bottom: 85px;
+      bottom: 82px;
       right: 20px;
       background: var(--bg-card);
       border: 1px solid var(--mint-primary);
@@ -484,7 +541,7 @@
       padding: 8px 14px;
       border-radius: 6px;
       font-size: 0.82rem;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s;
@@ -503,20 +560,21 @@
 </head>
 <body>
 
-  <!-- Top Bar -->
+  <!-- Header -->
   <header>
     <div class="brand">
-      <div class="brand-dot" id="liveDot"></div>
-      <span>OPENHIVE // JUKEBOX</span>
+      <div class="brand-dot"></div>
+      <span>OPENHIVE // SHOUTCAST & YT SYNC</span>
     </div>
 
-    <div class="search-bar">
-      <input type="text" id="searchInput" placeholder="Search 30,000+ live radio stations or artists (e.g. Synthwave, Eurobeat, Jazz)..." />
-      <button class="btn btn-primary" onclick="searchGlobalStations()">Search</button>
+    <div class="sync-pill">
+      <div class="sync-status-dot" id="syncDot"></div>
+      <span id="syncStatusText">Server Sync: Ready</span>
+      <button class="btn" style="padding: 2px 8px; font-size: 0.72rem;" onclick="resyncToServerClock()">Resync Now</button>
     </div>
 
-    <div style="font-size: 0.78rem; color: var(--text-dim);">
-      Tip: Close window to keep listening in-game! Use <b>!radio</b> for quick controls.
+    <div style="font-size: 0.76rem; color: var(--text-dim);">
+      Chat Commands: <b>!yt &lt;url&gt;</b> (Server Queue) | <b>!radio</b> (Favorites & Controls)
     </div>
   </header>
 
@@ -524,64 +582,92 @@
   <div class="workspace">
     <!-- Left Sidebar -->
     <aside class="sidebar">
-      <div class="nav-label">Library</div>
-      <button class="nav-btn active" id="nav-curated" onclick="switchTab('curated')">
-        <span>Curated & TF2 Mix</span>
+      <div class="nav-label">Navigation</div>
+      <button class="nav-btn active" id="nav-ytsync" onclick="switchTab('ytsync')">
+        <span>Server YouTube Sync</span>
+        <span class="badge-count" id="ytQueueCount">0</span>
       </button>
-      <button class="nav-btn" id="nav-jukebox" onclick="switchTab('jukebox')">
-        <span>Jukebox Tracks</span>
+      <button class="nav-btn" id="nav-shoutcast" onclick="switchTab('shoutcast')">
+        <span>Shoutcast Searcher</span>
       </button>
       <button class="nav-btn" id="nav-favorites" onclick="switchTab('favorites')">
         <span>Saved Favorites</span>
-        <span id="favCount">0</span>
-      </button>
-      <button class="nav-btn" id="nav-search" onclick="switchTab('search')">
-        <span>Live Radio Search</span>
+        <span class="badge-count" id="favCount">0</span>
       </button>
 
-      <div class="nav-label">Quick Genres (Live API)</div>
+      <div class="nav-label">Live Shoutcast Genres</div>
       <div class="genre-chips">
-        <span class="chip" onclick="quickTag('synthwave')">Synthwave</span>
-        <span class="chip" onclick="quickTag('lofi')">Lo-Fi</span>
-        <span class="chip" onclick="quickTag('rock')">Rock</span>
-        <span class="chip" onclick="quickTag('metal')">Metal</span>
-        <span class="chip" onclick="quickTag('jazz')">Jazz</span>
-        <span class="chip" onclick="quickTag('electronic')">Electronic</span>
-        <span class="chip" onclick="quickTag('chiptune')">Chiptune</span>
-        <span class="chip" onclick="quickTag('vaporwave')">Vaporwave</span>
-        <span class="chip" onclick="quickTag('hiphop')">Hip-Hop</span>
-        <span class="chip" onclick="quickTag('classical')">Classical</span>
+        <span class="chip" onclick="quickShoutcastGenre('synthwave')">Synthwave</span>
+        <span class="chip" onclick="quickShoutcastGenre('rock')">Classic Rock</span>
+        <span class="chip" onclick="quickShoutcastGenre('metal')">Heavy Metal</span>
+        <span class="chip" onclick="quickShoutcastGenre('lofi')">Lo-Fi Beats</span>
+        <span class="chip" onclick="quickShoutcastGenre('jazz')">Jazz</span>
+        <span class="chip" onclick="quickShoutcastGenre('drum and bass')">DnB</span>
+        <span class="chip" onclick="quickShoutcastGenre('techno')">Techno</span>
+        <span class="chip" onclick="quickShoutcastGenre('hiphop')">Hip-Hop</span>
+        <span class="chip" onclick="quickShoutcastGenre('80s')">80s Hits</span>
+        <span class="chip" onclick="quickShoutcastGenre('game')">VGM / Chiptune</span>
+      </div>
+
+      <div class="nav-label" style="margin-top: 14px;">Add Custom Stream Favorite</div>
+      <div style="display:flex; flex-direction:column; gap:6px; padding: 0 4px;">
+        <input type="text" id="favCustomName" placeholder="Station Name" />
+        <input type="text" id="favCustomUrl" placeholder="http://.../stream.mp3" />
+        <button class="btn btn-primary" style="justify-content:center;" onclick="saveCustomFavorite()">+ Save to Favorites</button>
       </div>
     </aside>
 
-    <!-- Center Content -->
+    <!-- Center Content Area -->
     <main class="content-area">
-      <!-- Custom Direct Stream / MP3 Loader -->
-      <div class="custom-url-box">
-        <input type="text" id="customNameInput" placeholder="Custom Title (Optional)" style="max-width: 180px;" />
-        <input type="text" id="customUrlInput" placeholder="Paste direct .mp3 / .ogg / Icecast stream URL..." />
-        <button class="btn" onclick="addCustomUrl(false)">+ Queue</button>
-        <button class="btn btn-primary" onclick="addCustomUrl(true)">Play URL</button>
+
+      <!-- Contextual Toolbar: YouTube Search/Queue Bar (Shown in YT Sync Tab) -->
+      <div class="toolbar-box" id="ytToolbar">
+        <input type="text" id="ytInput" placeholder="Paste YouTube URL / Video ID or search song title for the Server Queue..." style="flex: 1; min-width: 220px;" />
+        <input type="text" id="ytNickInput" placeholder="Your Nickname (Optional)" style="width: 150px;" />
+        <button class="btn" onclick="searchYouTubeCatalog()">Search YouTube</button>
+        <button class="btn btn-primary" onclick="handleDirectYouTubeAdd()">+ Send to Server Queue</button>
+      </div>
+
+      <!-- Contextual Toolbar: Shoutcast Directory Filter Bar (Shown in Shoutcast Tab) -->
+      <div class="toolbar-box" id="shoutcastToolbar" style="display: none;">
+        <input type="text" id="scNameInput" placeholder="Station name (e.g. Nightride, KEXP, Eurobeat)..." style="flex: 1; min-width: 160px;" />
+        <input type="text" id="scGenreInput" placeholder="Genre / Tag (e.g. rock, trance)..." style="width: 150px;" />
+        <select id="scBitrateSelect">
+          <option value="0">Any Bitrate</option>
+          <option value="64">64+ kbps</option>
+          <option value="128" selected>128+ kbps (HQ)</option>
+          <option value="192">192+ kbps</option>
+          <option value="320">320 kbps (Ultra)</option>
+        </select>
+        <select id="scSortSelect">
+          <option value="clickcount">Most Listeners</option>
+          <option value="bitrate">Highest Bitrate</option>
+          <option value="votes">Most Votes</option>
+          <option value="random">Random Discovery</option>
+        </select>
+        <button class="btn btn-primary" onclick="executeShoutcastSearch()">Search Shoutcast</button>
       </div>
 
       <div class="section-header">
-        <div class="section-title" id="sectionTitle">Curated Server Stations</div>
-        <div style="font-size: 0.8rem; color: var(--text-dim);" id="resultCount">Ready</div>
+        <div class="section-title" id="sectionTitle">Server-Synchronized YouTube Jukebox</div>
+        <div style="font-size: 0.8rem; color: var(--text-dim);" id="resultCount">Live Sync Active</div>
       </div>
 
-      <div class="station-grid" id="stationGrid"></div>
+      <div class="station-grid" id="mainGrid"></div>
     </main>
 
-    <!-- Right Sidebar: Visualizer & Active Queue -->
+    <!-- Right Panel: YouTube Sync Viewport & Shared Server Queue -->
     <aside class="queue-panel">
-      <div class="nav-label" style="margin-top:0;">Mint Spectrum</div>
-      <div class="visualizer-box" id="visualizer"></div>
+      <div class="yt-viewport-wrapper">
+        <div id="ytPlayerContainer"></div>
+        <div class="yt-overlay-tag" id="modeOverlayBadge">MODE: YOUTUBE SYNC</div>
+      </div>
 
       <div class="section-header">
-        <div class="section-title" style="font-size:0.9rem;">Up Next Queue</div>
-        <button class="btn" style="padding: 3px 8px; font-size:0.72rem;" onclick="clearQueue()">Clear</button>
+        <div class="section-title" style="font-size:0.88rem;">Server YouTube Queue</div>
+        <button class="btn" style="padding: 3px 8px; font-size:0.72rem;" onclick="broadcastSkipCurrentYT()">Skip Song &#9654;&#9654;</button>
       </div>
-      <div class="queue-list" id="queueList"></div>
+      <div class="queue-list" id="ytQueueList"></div>
     </aside>
   </div>
 
@@ -589,350 +675,908 @@
   <footer class="player-deck">
     <div class="now-playing">
       <span class="np-badge" id="npBadge">IDLE</span>
-      <div class="np-title" id="npTitle">No Station Selected</div>
-      <div class="np-sub" id="npSub">Pick a station or use !radio in chat</div>
+      <div class="np-title" id="npTitle">Waiting for Stream or Server Queue</div>
+      <div class="np-sub" id="npSub">Use !yt &lt;url&gt; in chat or pick a Shoutcast station</div>
     </div>
 
     <div class="deck-center">
       <div class="transport-controls">
-        <button class="btn" id="shuffleBtn" onclick="toggleShuffle()" title="Shuffle Queue">Shuffle: OFF</button>
-        <button class="btn" onclick="playPrev()">&#9664;&#9664;</button>
-        <button class="btn btn-primary" id="playPauseBtn" onclick="togglePlayPause()" style="min-width: 90px; justify-content: center;">&#9654; Play</button>
-        <button class="btn" onclick="playNext()">&#9654;&#9654;</button>
-        <button class="btn" onclick="stopPlayback()" style="color: var(--danger);">Stop</button>
+        <button class="btn" onclick="playPrevFavorite()" title="Previous Favorite Slot">&#9664;&#9664; Fav</button>
+        <button class="btn btn-primary" id="playPauseBtn" onclick="togglePlayPause()" style="min-width: 95px; justify-content: center;">&#9654; Play</button>
+        <button class="btn" onclick="handleNextAction()" title="Skip YT Song or Next Favorite">Next &#9654;&#9654;</button>
+        <button class="btn" onclick="stopAllPlayback()" style="color: var(--danger);">Stop</button>
       </div>
       <div class="seek-row">
         <span id="curTime">0:00</span>
-        <input type="range" id="seekSlider" min="0" max="100" value="0" oninput="seekAudio(this.value)" />
-        <span id="durTime">LIVE</span>
+        <input type="range" id="seekSlider" min="0" max="100" value="0" disabled />
+        <span id="durTime">SYNCED</span>
       </div>
     </div>
 
     <div class="deck-right">
       <span style="font-size: 0.8rem; color: var(--text-muted);">VOL</span>
-      <input type="range" id="volSlider" min="0" max="100" value="60" oninput="setVolume(this.value)" style="max-width: 120px;" />
-      <span id="volLabel" style="font-size: 0.8rem; width: 34px;">60%</span>
+      <input type="range" id="volSlider" min="0" max="100" value="65" oninput="setVolume(this.value)" style="max-width: 120px;" />
+      <span id="volLabel" style="font-size: 0.8rem; width: 36px;">65%</span>
     </div>
   </footer>
 
-  <div class="status-toast" id="toast">Command Received</div>
-  <audio id="audioPlayer" preload="none"></audio>
+  <div class="status-toast" id="toast">Ready</div>
+  <audio id="radioAudio" preload="none"></audio>
+
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
 
   <script>
-    // --- 1. Built-in Curated Stations & Jukebox Tracks ---
-    const CURATED_STATIONS = [
-      { id: 'c1', name: 'Nightride FM (Synthwave)', url: 'https://stream.nightride.fm/nightride.m4a', genre: 'Synthwave / Cyberpunk', isLive: true },
-      { id: 'c2', name: 'Chillsynth FM', url: 'https://stream.nightride.fm/chillsynth.m4a', genre: 'Chill / Retro', isLive: true },
-      { id: 'c3', name: 'SomaFM: Groove Salad', url: 'https://ice2.somafm.com/groovesalad-128-mp3', genre: 'Ambient / Downtempo', isLive: true },
-      { id: 'c4', name: 'SomaFM: DEF CON Radio', url: 'https://ice2.somafm.com/defcon-128-mp3', genre: 'Hacker / Electronic', isLive: true },
-      { id: 'c5', name: 'SomaFM: Metal Detector', url: 'https://ice2.somafm.com/metal-128-mp3', genre: 'Heavy Metal', isLive: true },
-      { id: 'c6', name: 'Plaza One (Vaporwave)', url: 'https://radio.plaza.one/mp3', genre: 'Vaporwave / Aesthetics', isLive: true },
-      { id: 'c7', name: 'Datawave FM', url: 'https://stream.nightride.fm/datawave.m4a', genre: 'IDM / Electro', isLive: true },
-      { id: 'c8', name: 'SomaFM: Secret Agent', url: 'https://ice2.somafm.com/secretagent-128-mp3', genre: 'Spy Jazz / Lounge', isLive: true }
-    ];
+    // =========================================================================
+    // 1. STATE & CONFIGURATION
+    // =========================================================================
+    const radioAudio = document.getElementById('radioAudio');
+    let ytPlayer = null;
+    let ytReady = false;
 
-    const JUKEBOX_TRACKS = [
-      { id: 'j1', name: 'Cybernetic Horizon (Loop Mix)', url: 'https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/theme_01.mp3', genre: 'Arcade / Action', isLive: false },
-      { id: 'j2', name: 'Retro Chiptune Runner', url: 'https://codeskulptor-demos.commondatastorage.googleapis.com/pang/paza-moduless.mp3', genre: 'Chiptune / Upbeat', isLive: false },
-      { id: 'j3', name: 'Dark Mint Overdrive', url: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg', genre: 'Electronic / Chill', isLive: false }
-    ];
-
-    // Radio Browser API Mirrors for high availability
-    const API_MIRRORS = [
+    // Shoutcast / Icecast API Directory Mirrors
+    const SHOUTCAST_MIRRORS = [
       'https://de1.api.radio-browser.info/json/stations/search',
       'https://fi1.api.radio-browser.info/json/stations/search',
       'https://at1.api.radio-browser.info/json/stations/search'
     ];
 
-    // --- 2. State Management ---
-    const audio = document.getElementById('audioPlayer');
+    // Public Piped API Mirrors for YouTube Song Searching without an API key
+    const YT_SEARCH_MIRRORS = [
+      'https://pipedapi.kavin.rocks/search',
+      'https://api.piped.private.coffee/search',
+      'https://pipedapi.adminforge.de/search'
+    ];
+
+    // Starter Favorites if the user hasn't starred stations yet
+    const DEFAULT_FAVORITES = [
+      { id: 'fav_1', name: 'Nightride FM (Synthwave Shoutcast)', url: 'https://stream.nightride.fm/nightride.m4a', genre: 'Synthwave • 192k' },
+      { id: 'fav_2', name: 'SomaFM: Groove Salad (Icecast)', url: 'https://ice2.somafm.com/groovesalad-128-mp3', genre: 'Downtempo • 128k' },
+      { id: 'fav_3', name: 'SomaFM: Metal Detector', url: 'https://ice2.somafm.com/metal-128-mp3', genre: 'Heavy Metal • 128k' },
+      { id: 'fav_4', name: 'Plaza One (Vaporwave Radio)', url: 'https://radio.plaza.one/mp3', genre: 'Vaporwave • 128k' }
+    ];
+
     let state = {
-      activeTab: 'curated',
-      currentItem: null,
-      queue: [...CURATED_STATIONS],
-      queueIndex: 0,
+      activeTab: 'ytsync',
+      mode: 'yt', // 'yt' (Server YouTube Sync) or 'radio' (Personal Shoutcast/Favorite Stream)
+      volume: 65,
       favorites: [],
-      searchResults: [],
-      volume: 60,
-      shuffle: false,
-      isPlaying: false
+      favIndex: 0,
+      currentRadio: null,
+      shoutcastResults: [],
+      ytSearchResults: [],
+      // Shared Server YouTube State
+      serverQueue: [], // Array of { vid, title, author, duration, reqBy, startedAtUnix }
+      currentYT: null,
+      roomTopic: 'openhive/tf2/jukebox/v2_default'
     };
 
-    // Build Visualizer Bars
-    const visContainer = document.getElementById('visualizer');
-    const VIS_BAR_COUNT = 22;
-    for (let i = 0; i < VIS_BAR_COUNT; i++) {
-      const bar = document.createElement('div');
-      bar.className = 'vis-bar';
-      visContainer.appendChild(bar);
-    }
-    const visBars = document.querySelectorAll('.vis-bar');
+    let mqttClient = null;
 
-    // --- 3. Initialization & LocalStorage Restore ---
+    // =========================================================================
+    // 2. INITIALIZATION & STORAGE
+    // =========================================================================
     window.addEventListener('DOMContentLoaded', () => {
-      loadSavedState();
-      renderQueue();
-      switchTab(state.activeTab || 'curated');
+      loadLocalState();
 
-      // Enter key in search input
-      document.getElementById('searchInput').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') searchGlobalStations();
+      // Determine server room from query ?room=... if provided
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('room')) {
+        state.roomTopic = `openhive/tf2/jukebox/${urlParams.get('room')}`;
+      }
+
+      initRealtimeServerSync();
+      switchTab('ytsync');
+      executeShoutcastSearch(true); // Pre-fetch live Shoutcast directory in background
+
+      // Enter key bindings
+      document.getElementById('ytInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') handleDirectYouTubeAdd();
+      });
+      document.getElementById('scNameInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') executeShoutcastSearch();
+      });
+      document.getElementById('scGenreInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') executeShoutcastSearch();
       });
 
-      // Handle initial query or hash parameters from SourceMod
-      checkInitialUrlParams();
+      // Listen for non-resetting #hash IPC commands from SourceMod (!radio / !yt)
+      window.addEventListener('hashchange', handleSourceModHashCommand);
+      if (window.location.hash) {
+        setTimeout(handleSourceModHashCommand, 300);
+      }
 
-      // Listen for non-resetting hash commands from SourceMod (!radio)
-      window.addEventListener('hashchange', handleHashCommand);
-
-      // Periodic state checkpoint & visualizer animation
-      setInterval(saveCheckpoint, 1000);
-      setInterval(updateVisualizer, 130);
+      // Master clock drift enforcement every 1.5 seconds
+      setInterval(enforceServerYouTubeTimestamp, 1500);
     });
 
-    function loadSavedState() {
+    function loadLocalState() {
       try {
-        const savedFavs = localStorage.getItem('openhive_favs');
-        if (savedFavs) state.favorites = JSON.parse(savedFavs);
+        const savedFavs = localStorage.getItem('openhive_favs_v2');
+        state.favorites = savedFavs ? JSON.parse(savedFavs) : [...DEFAULT_FAVORITES];
 
-        const savedCheckpoint = localStorage.getItem('openhive_state');
-        if (savedCheckpoint) {
-          const parsed = JSON.parse(savedCheckpoint);
-          if (typeof parsed.volume === 'number') state.volume = parsed.volume;
-          if (Array.isArray(parsed.queue) && parsed.queue.length > 0) state.queue = parsed.queue;
-          if (typeof parsed.queueIndex === 'number') state.queueIndex = parsed.queueIndex;
-          if (typeof parsed.shuffle === 'boolean') state.shuffle = parsed.shuffle;
-          if (parsed.currentItem) state.currentItem = parsed.currentItem;
+        const savedVol = localStorage.getItem('openhive_vol_v2');
+        if (savedVol !== null) state.volume = parseInt(savedVol, 10);
 
-          setVolume(state.volume, true);
-          document.getElementById('shuffleBtn').textContent = `Shuffle: ${state.shuffle ? 'ON' : 'OFF'}`;
+        const savedNick = localStorage.getItem('openhive_nick_v2');
+        if (savedNick) document.getElementById('ytNickInput').value = savedNick;
 
-          // Auto-resume if it was playing right before a window refresh
-          if (parsed.isPlaying && parsed.currentItem && !window.location.hash.includes('cmd=')) {
-            playItem(parsed.currentItem, false, parsed.currentTime || 0);
-          } else if (parsed.currentItem) {
-            updateNowPlayingUI(parsed.currentItem, false);
-          }
-        } else {
-          setVolume(60, true);
+        const savedQueue = localStorage.getItem('openhive_yt_queue_v2');
+        if (savedQueue) {
+          const parsed = JSON.parse(savedQueue);
+          state.serverQueue = parsed.serverQueue || [];
+          state.currentYT = parsed.currentYT || null;
         }
-        updateFavCount();
       } catch (e) {
-        console.warn('State restore warning:', e);
+        state.favorites = [...DEFAULT_FAVORITES];
       }
+      setVolume(state.volume, true);
+      updateBadges();
+      renderServerQueue();
     }
 
-    function saveCheckpoint() {
+    function persistQueueState() {
       try {
-        const payload = {
-          currentItem: state.currentItem,
-          queue: state.queue.slice(0, 50),
-          queueIndex: state.queueIndex,
-          volume: state.volume,
-          shuffle: state.shuffle,
-          isPlaying: !audio.paused,
-          currentTime: audio.currentTime || 0
-        };
-        localStorage.setItem('openhive_state', JSON.stringify(payload));
+        localStorage.setItem('openhive_yt_queue_v2', JSON.stringify({
+          serverQueue: state.serverQueue,
+          currentYT: state.currentYT
+        }));
       } catch (e) {}
     }
 
-    // --- 4. SourceMod Hash Command Engine (No-Reset Control) ---
-    function checkInitialUrlParams() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const streamParam = urlParams.get('stream');
-      if (streamParam) {
-        playItem({
-          id: 'sm_stream',
-          name: 'Server Radio Stream',
-          url: streamParam,
-          genre: 'Server Broadcast',
-          isLive: true
-        });
+    // =========================================================================
+    // 3. YOUTUBE IFRAME API & TIMESTAMP SYNCHRONIZATION
+    // =========================================================================
+    function onYouTubeIframeAPIReady() {
+      ytPlayer = new YT.Player('ytPlayerContainer', {
+        width: '100%',
+        height: '100%',
+        videoId: '',
+        playerVars: {
+          autoplay: 1,
+          controls: 0,
+          disablekb: 1,
+          rel: 0,
+          modestbranding: 1,
+          playsinline: 1
+        },
+        events: {
+          onReady: () => {
+            ytReady = true;
+            ytPlayer.setVolume(state.volume);
+            if (state.currentYT) {
+              syncYouTubePlayerToCurrent(true);
+            }
+          },
+          onStateChange: (e) => {
+            if (e.data === YT.PlayerState.ENDED) {
+              advanceServerYouTubeQueue();
+            }
+          },
+          onError: () => {
+            showToast('Video blocked embedding; skipping to next queued song...');
+            setTimeout(advanceServerYouTubeQueue, 1200);
+          }
+        }
+      });
+    }
+
+    function extractYouTubeId(input) {
+      if (!input) return null;
+      const trimmed = input.trim();
+      if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+      const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+      const match = trimmed.match(regExp);
+      return match ? match[1] : null;
+    }
+
+    async function fetchYouTubeMetadata(vid) {
+      try {
+        const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${vid}`);
+        if (res.ok) {
+          const data = await res.json();
+          return {
+            vid,
+            title: data.title || `YouTube Video (${vid})`,
+            author: data.author_name || 'YouTube',
+            thumbnail: data.thumbnail_url || `https://i.ytimg.com/vi/${vid}/mqdefault.jpg`
+          };
+        }
+      } catch (e) {}
+      return {
+        vid,
+        title: `YouTube Track (${vid})`,
+        author: 'Server Queue',
+        thumbnail: `https://i.ytimg.com/vi/${vid}/mqdefault.jpg`
+      };
+    }
+
+    // Calculates exact server elapsed timestamp and locks playback position
+    function enforceServerYouTubeTimestamp() {
+      if (state.mode !== 'yt' || !state.currentYT || !ytReady || !ytPlayer) return;
+
+      const nowSec = Date.now() / 1000;
+      const elapsedSec = Math.max(0, nowSec - state.currentYT.startedAtUnix);
+
+      // Update UI clock
+      document.getElementById('curTime').textContent = formatSeconds(elapsedSec);
+      if (state.currentYT.duration && state.currentYT.duration > 0) {
+        document.getElementById('durTime').textContent = formatSeconds(state.currentYT.duration);
+        document.getElementById('seekSlider').value = Math.min(100, (elapsedSec / state.currentYT.duration) * 100);
+        if (elapsedSec >= state.currentYT.duration + 2) {
+          advanceServerYouTubeQueue();
+          return;
+        }
+      } else {
+        document.getElementById('durTime').textContent = 'LIVE SYNC';
+        document.getElementById('seekSlider').value = 100;
       }
-      if (window.location.hash) {
-        handleHashCommand();
+
+      // Check player drift against authoritative server timestamp
+      const playerState = ytPlayer.getPlayerState ? ytPlayer.getPlayerState() : -1;
+      if (playerState === YT.PlayerState.PLAYING) {
+        const localTime = ytPlayer.getCurrentTime() || 0;
+        const drift = Math.abs(localTime - elapsedSec);
+        if (drift > 2.2) {
+          ytPlayer.seekTo(elapsedSec, true);
+          document.getElementById('syncStatusText').textContent = `Server Sync: Locked (Corrected ${drift.toFixed(1)}s)`;
+        } else {
+          document.getElementById('syncStatusText').textContent = `Server Sync: Locked (±${drift.toFixed(1)}s)`;
+        }
       }
     }
 
-    function handleHashCommand() {
+    function syncYouTubePlayerToCurrent(forceLoad = false) {
+      if (!state.currentYT || !ytReady || !ytPlayer) return;
+
+      // Stop personal Shoutcast radio if active
+      radioAudio.pause();
+      radioAudio.removeAttribute('src');
+      state.mode = 'yt';
+      document.getElementById('modeOverlayBadge').textContent = 'MODE: YOUTUBE SYNC';
+
+      const elapsed = Math.max(0, (Date.now() / 1000) - state.currentYT.startedAtUnix);
+      const currentLoadedUrl = ytPlayer.getVideoUrl ? ytPlayer.getVideoUrl() : '';
+      const currentVid = extractYouTubeId(currentLoadedUrl);
+
+      if (forceLoad || currentVid !== state.currentYT.vid) {
+        ytPlayer.loadVideoById({
+          videoId: state.currentYT.vid,
+          startSeconds: Math.floor(elapsed)
+        });
+      } else {
+        ytPlayer.seekTo(elapsed, true);
+        ytPlayer.playVideo();
+      }
+
+      ytPlayer.setVolume(state.volume);
+      updateNowPlayingBar(
+        'SERVER YT SYNC',
+        state.currentYT.title,
+        `Requested by ${state.currentYT.reqBy || 'Player'} • ${state.currentYT.author || 'YouTube'}`,
+        true
+      );
+      renderServerQueue();
+      persistQueueState();
+    }
+
+    function resyncToServerClock() {
+      if (state.currentYT) {
+        syncYouTubePlayerToCurrent(true);
+        showToast('Resynchronized to exact Server Timestamp!');
+      } else {
+        showToast('No active YouTube song in Server Queue.');
+      }
+    }
+
+    async function enqueueYouTubeTrack(vid, customMeta = null, broadcast = true, forceStartTimeUnix = null) {
+      const meta = customMeta || await fetchYouTubeMetadata(vid);
+      const nick = document.getElementById('ytNickInput').value.trim() || 'TF2 Player';
+      localStorage.setItem('openhive_nick_v2', nick);
+
+      const trackItem = {
+        vid: meta.vid,
+        title: meta.title,
+        author: meta.author || 'YouTube',
+        duration: meta.duration || 0,
+        reqBy: meta.reqBy || nick,
+        startedAtUnix: forceStartTimeUnix || Math.floor(Date.now() / 1000)
+      };
+
+      if (!state.currentYT) {
+        state.currentYT = trackItem;
+        syncYouTubePlayerToCurrent(true);
+      } else {
+        // Avoid duplicate consecutive entries with identical start time
+        const exists = state.serverQueue.some(q => q.vid === trackItem.vid && Math.abs(q.startedAtUnix - trackItem.startedAtUnix) < 3);
+        if (!exists) {
+          state.serverQueue.push(trackItem);
+        }
+      }
+
+      updateBadges();
+      renderServerQueue();
+      persistQueueState();
+
+      if (broadcast && mqttClient && mqttClient.connected) {
+        mqttClient.publish(state.roomTopic, JSON.stringify({
+          type: 'yt_enqueue',
+          track: trackItem,
+          currentYT: state.currentYT,
+          serverQueue: state.serverQueue
+        }));
+      }
+      showToast(`Queued for Server: ${trackItem.title}`);
+    }
+
+    function advanceServerYouTubeQueue() {
+      if (state.serverQueue.length > 0) {
+        const nextTrack = state.serverQueue.shift();
+        nextTrack.startedAtUnix = Math.floor(Date.now() / 1000);
+        state.currentYT = nextTrack;
+        syncYouTubePlayerToCurrent(true);
+      } else {
+        state.currentYT = null;
+        if (ytReady && ytPlayer) ytPlayer.stopVideo();
+        updateNowPlayingBar('IDLE', 'Server Queue Finished', 'Add a song with !yt <url> or search above', false);
+      }
+      updateBadges();
+      renderServerQueue();
+      persistQueueState();
+    }
+
+    function broadcastSkipCurrentYT() {
+      advanceServerYouTubeQueue();
+      if (mqttClient && mqttClient.connected) {
+        mqttClient.publish(state.roomTopic, JSON.stringify({
+          type: 'yt_sync_state',
+          currentYT: state.currentYT,
+          serverQueue: state.serverQueue
+        }));
+      }
+      showToast('Skipped to next song in Server Queue');
+    }
+
+    // =========================================================================
+    // 4. REAL-TIME WEBSOCKET SYNC (FOR SONGS ADDED VIA WEB UI)
+    // =========================================================================
+    function initRealtimeServerSync() {
+      try {
+        mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
+          clientId: 'oh_tf2_' + Math.random().toString(16).slice(2, 10),
+          clean: true,
+          connectTimeout: 4000
+        });
+
+        mqttClient.on('connect', () => {
+          mqttClient.subscribe(state.roomTopic);
+          document.getElementById('syncStatusText').textContent = 'Server Sync: Connected (Live)';
+          // Ask existing peers for current server queue state
+          mqttClient.publish(state.roomTopic, JSON.stringify({ type: 'req_state' }));
+        });
+
+        mqttClient.on('message', (topic, payload) => {
+          try {
+            const msg = JSON.parse(payload.toString());
+            if (msg.type === 'req_state' && state.currentYT) {
+              mqttClient.publish(state.roomTopic, JSON.stringify({
+                type: 'yt_sync_state',
+                currentYT: state.currentYT,
+                serverQueue: state.serverQueue
+              }));
+            } else if (msg.type === 'yt_enqueue' || msg.type === 'yt_sync_state') {
+              const prevVid = state.currentYT ? state.currentYT.vid : null;
+              state.currentYT = msg.currentYT;
+              state.serverQueue = msg.serverQueue || [];
+              updateBadges();
+              renderServerQueue();
+              persistQueueState();
+
+              if (state.mode === 'yt' && state.currentYT) {
+                syncYouTubePlayerToCurrent(prevVid !== state.currentYT.vid);
+              }
+            }
+          } catch (e) {}
+        });
+      } catch (e) {
+        console.warn('MQTT fallback to SourceMod Hash IPC only.');
+      }
+    }
+
+    // =========================================================================
+    // 5. YOUTUBE SEARCH & DIRECT URL HANDLER
+    // =========================================================================
+    async function handleDirectYouTubeAdd() {
+      const raw = document.getElementById('ytInput').value.trim();
+      if (!raw) return;
+
+      const vid = extractYouTubeId(raw);
+      if (vid) {
+        document.getElementById('ytInput').value = '';
+        await enqueueYouTubeTrack(vid, null, true);
+      } else {
+        await searchYouTubeCatalog();
+      }
+    }
+
+    async function searchYouTubeCatalog() {
+      const query = document.getElementById('ytInput').value.trim();
+      if (!query) return;
+
+      const directVid = extractYouTubeId(query);
+      if (directVid) {
+        const meta = await fetchYouTubeMetadata(directVid);
+        state.ytSearchResults = [meta];
+        renderYouTubeSearchCards();
+        return;
+      }
+
+      document.getElementById('resultCount').textContent = `Searching YouTube for "${query}"...`;
+
+      for (const mirror of YT_SEARCH_MIRRORS) {
+        try {
+          const res = await fetch(`${mirror}?q=${encodeURIComponent(query)}&filter=videos`);
+          if (!res.ok) continue;
+          const data = await res.json();
+          const items = (data.items || []).filter(i => i.url && i.url.includes('watch?v='));
+
+          state.ytSearchResults = items.slice(0, 24).map(item => ({
+            vid: extractYouTubeId(item.url),
+            title: item.title || 'YouTube Track',
+            author: item.uploaderName || 'YouTube',
+            duration: item.duration || 0
+          })).filter(i => i.vid);
+
+          document.getElementById('resultCount').textContent = `${state.ytSearchResults.length} YouTube results`;
+          renderYouTubeSearchCards();
+          return;
+        } catch (err) {
+          console.warn('Piped mirror failed, trying next:', mirror);
+        }
+      }
+
+      document.getElementById('resultCount').textContent = 'Tip: Paste any full YouTube URL or 11-character Video ID directly!';
+    }
+
+    function renderYouTubeSearchCards() {
+      const grid = document.getElementById('mainGrid');
+      grid.innerHTML = '';
+
+      if (!state.ytSearchResults || state.ytSearchResults.length === 0) {
+        grid.innerHTML = `
+          <div style="color:var(--text-dim); padding: 14px; grid-column: 1 / -1;">
+            Paste any <b>YouTube link</b> above (or type <b>!yt &lt;url&gt;</b> in TF2 chat) to broadcast and synchronize a song across the entire server down to the exact second.
+          </div>`;
+        return;
+      }
+
+      state.ytSearchResults.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'station-card';
+        card.innerHTML = `
+          <div>
+            <span class="slot-badge">YOUTUBE VIDEO</span>
+            <div class="station-name"></div>
+            <div class="station-meta"></div>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-primary btn-sm">+ Send to Server Queue</button>
+          </div>
+        `;
+        card.querySelector('.station-name').textContent = item.title;
+        card.querySelector('.station-meta').textContent = `${item.author} ${item.duration ? '• ' + formatSeconds(item.duration) : ''}`;
+        card.querySelector('button').addEventListener('click', () => {
+          enqueueYouTubeTrack(item.vid, item, true);
+        });
+        grid.appendChild(card);
+      });
+    }
+
+    // =========================================================================
+    // 6. REAL SHOUTCAST & ICECAST DIRECTORY SEARCHER
+    // =========================================================================
+    async function executeShoutcastSearch(silentInit = false) {
+      const name = document.getElementById('scNameInput').value.trim();
+      const tag = document.getElementById('scGenreInput').value.trim();
+      const bitrateMin = document.getElementById('scBitrateSelect').value;
+      const order = document.getElementById('scSortSelect').value;
+
+      if (!silentInit) {
+        switchTab('shoutcast');
+        document.getElementById('resultCount').textContent = 'Querying live Shoutcast/Icecast directory...';
+      }
+
+      const params = new URLSearchParams({
+        limit: '44',
+        hidebroken: 'true',
+        order: order,
+        reverse: 'true'
+      });
+
+      if (name) params.set('name', name);
+      if (tag) params.set('tag', tag);
+      if (parseInt(bitrateMin, 10) > 0) params.set('bitrateMin', bitrateMin);
+
+      for (const mirror of SHOUTCAST_MIRRORS) {
+        try {
+          const res = await fetch(`${mirror}?${params.toString()}`);
+          if (!res.ok) continue;
+          const data = await res.json();
+
+          state.shoutcastResults = data
+            .filter(st => st.url_resolved)
+            .map(st => ({
+              id: st.stationuuid,
+              name: (st.name || 'Unnamed Shoutcast Stream').trim(),
+              url: st.url_resolved,
+              genre: `${st.tags ? st.tags.split(',').slice(0, 2).join(', ') : (st.countrycode || 'Shoutcast')} • ${st.codec || 'MP3'} ${st.bitrate ? st.bitrate + 'kbps' : ''}`
+            }));
+
+          if (state.activeTab === 'shoutcast') {
+            document.getElementById('resultCount').textContent = `${state.shoutcastResults.length} live Shoutcast/Icecast stations`;
+            renderStationCards(state.shoutcastResults, false);
+          }
+          return;
+        } catch (e) {}
+      }
+    }
+
+    function quickShoutcastGenre(genre) {
+      document.getElementById('scNameInput').value = '';
+      document.getElementById('scGenreInput').value = genre;
+      executeShoutcastSearch(false);
+    }
+
+    // =========================================================================
+    // 7. SAVED FAVORITES & RADIO STREAM PLAYBACK
+    // =========================================================================
+    function playRadioStream(station, favSlotIndex = -1) {
+      if (!station || !station.url) return;
+
+      // Pause YouTube player when listening to a personal Shoutcast/Favorite stream
+      state.mode = 'radio';
+      if (ytReady && ytPlayer && ytPlayer.pauseVideo) {
+        ytPlayer.pauseVideo();
+      }
+      document.getElementById('modeOverlayBadge').textContent = 'MODE: SHOUTCAST STREAM';
+
+      state.currentRadio = station;
+      if (favSlotIndex >= 0) state.favIndex = favSlotIndex;
+
+      radioAudio.src = station.url;
+      radioAudio.volume = state.volume / 100;
+      radioAudio.play().then(() => {
+        updateNowPlayingBar('SHOUTCAST LIVE', station.name, station.genre || 'Live Stream', true);
+        renderActiveTabGrid();
+      }).catch(() => {
+        showToast('Stream offline or unsupported codec; try another station.');
+      });
+    }
+
+    function toggleFavorite(station) {
+      const idx = state.favorites.findIndex(f => f.url === station.url);
+      if (idx === -1) {
+        state.favorites.push(station);
+        showToast(`Saved to Favorites Slot #${state.favorites.length}: ${station.name}`);
+      } else {
+        state.favorites.splice(idx, 1);
+        showToast(`Removed "${station.name}" from Favorites`);
+      }
+      localStorage.setItem('openhive_favs_v2', JSON.stringify(state.favorites));
+      updateBadges();
+      renderActiveTabGrid();
+    }
+
+    function saveCustomFavorite() {
+      const nameEl = document.getElementById('favCustomName');
+      const urlEl = document.getElementById('favCustomUrl');
+      const url = urlEl.value.trim();
+      if (!url) return;
+
+      const station = {
+        id: 'fav_' + Date.now(),
+        name: nameEl.value.trim() || 'Custom Favorite Stream',
+        url: url,
+        genre: 'Custom Stream'
+      };
+
+      state.favorites.push(station);
+      localStorage.setItem('openhive_favs_v2', JSON.stringify(state.favorites));
+      nameEl.value = '';
+      urlEl.value = '';
+      updateBadges();
+      switchTab('favorites');
+      showToast(`Saved "${station.name}" to Favorites Slot #${state.favorites.length}`);
+    }
+
+    function playFavoriteBySlot(slotOneBased) {
+      if (state.favorites.length === 0) {
+        showToast('No Saved Favorites yet!');
+        return;
+      }
+      const idx = Math.max(0, Math.min(state.favorites.length - 1, slotOneBased - 1));
+      state.favIndex = idx;
+      playRadioStream(state.favorites[idx], idx);
+      showToast(`Playing Favorite #${idx + 1}: ${state.favorites[idx].name}`);
+    }
+
+    function playNextFavorite() {
+      if (state.favorites.length === 0) return;
+      state.favIndex = (state.favIndex + 1) % state.favorites.length;
+      playFavoriteBySlot(state.favIndex + 1);
+    }
+
+    function playPrevFavorite() {
+      if (state.favorites.length === 0) return;
+      state.favIndex = (state.favIndex - 1 + state.favorites.length) % state.favorites.length;
+      playFavoriteBySlot(state.favIndex + 1);
+    }
+
+    // =========================================================================
+    // 8. SOURCEMOD NON-RESETTING HASH IPC HANDLER
+    // =========================================================================
+    async function handleSourceModHashCommand() {
       const hash = window.location.hash.substring(1);
       if (!hash) return;
       const params = new URLSearchParams(hash);
-      const cmd = params.get('cmd');
-      const val = params.get('val');
+      const cmd = (params.get('cmd') || '').toLowerCase();
+      const val = params.get('val') || '';
 
-      if (!cmd) return;
+      switch (cmd) {
+        case 'ytsync': {
+          // Authoritative broadcast from SourceMod (!yt <url> or server skip)
+          const vid = params.get('vid');
+          const startUnix = parseInt(params.get('start') || '0', 10) || Math.floor(Date.now() / 1000);
+          const reqBy = params.get('req') || 'Server Player';
+          const qStr = params.get('q') || '';
 
-      switch (cmd.toLowerCase()) {
+          if (vid) {
+            const meta = await fetchYouTubeMetadata(vid);
+            state.currentYT = {
+              vid,
+              title: meta.title,
+              author: meta.author,
+              duration: 0,
+              reqBy,
+              startedAtUnix: startUnix
+            };
+            syncYouTubePlayerToCurrent(true);
+            showToast(`Server Playing: ${meta.title} (by ${reqBy})`);
+          }
+
+          if (qStr) {
+            const qVids = qStr.split(',').filter(Boolean);
+            state.serverQueue = await Promise.all(qVids.map(async (qVid) => {
+              const m = await fetchYouTubeMetadata(qVid);
+              return { vid: qVid, title: m.title, author: m.author, reqBy: 'Server Queue', startedAtUnix: 0 };
+            }));
+          } else {
+            state.serverQueue = [];
+          }
+          updateBadges();
+          renderServerQueue();
+          persistQueueState();
+          break;
+        }
+        case 'fav': {
+          const slot = parseInt(val, 10) || 1;
+          playFavoriteBySlot(slot);
+          break;
+        }
+        case 'addfav': {
+          const favName = params.get('name') || 'In-Game Favorite';
+          if (val) {
+            state.favorites.push({ id: 'smfav_' + Date.now(), name: favName, url: val, genre: 'Saved via !radio' });
+            localStorage.setItem('openhive_favs_v2', JSON.stringify(state.favorites));
+            updateBadges();
+            renderActiveTabGrid();
+            showToast(`Added "${favName}" to Saved Favorites!`);
+          }
+          break;
+        }
         case 'vol':
         case 'volume': {
-          const v = Math.max(0, Math.min(100, parseInt(val, 10) || 50));
+          const v = Math.max(0, Math.min(100, parseInt(val, 10) || 60));
           setVolume(v, true);
           showToast(`Volume set to ${v}%`);
           break;
         }
         case 'next':
         case 'skip':
-          playNext();
-          showToast('Skipped to next station/track');
+          handleNextAction();
           break;
         case 'prev':
-          playPrev();
-          showToast('Previous station/track');
+          playPrevFavorite();
           break;
         case 'toggle':
         case 'pause':
           togglePlayPause();
-          showToast(audio.paused ? 'Playback Paused' : 'Playback Resumed');
           break;
         case 'stop':
-          stopPlayback();
-          showToast('Playback Stopped');
-          break;
-        case 'preset': {
-          const idx = (parseInt(val, 10) || 1) - 1;
-          if (CURATED_STATIONS[idx]) {
-            playItem(CURATED_STATIONS[idx]);
-            showToast(`Playing Preset: ${CURATED_STATIONS[idx].name}`);
-          }
-          break;
-        }
-        case 'url':
-          if (val) {
-            const name = params.get('name') || 'Custom In-Game Stream';
-            playItem({ id: 'custom_' + Date.now(), name, url: val, genre: 'Custom Stream', isLive: true });
-            showToast(`Playing: ${name}`);
-          }
+          stopAllPlayback();
           break;
         case 'search':
           if (val) {
-            document.getElementById('searchInput').value = val;
-            searchGlobalStations(true);
-            showToast(`Searching & Auto-Playing: ${val}`);
+            document.getElementById('scNameInput').value = val;
+            document.getElementById('scGenreInput').value = '';
+            await executeShoutcastSearch(false);
+            if (state.shoutcastResults.length > 0) {
+              playRadioStream(state.shoutcastResults[0]);
+            }
           }
-          break;
-        case 'open':
-          // Just brings the UI into view without resetting audio!
           break;
       }
     }
 
-    // --- 5. Audio Playback & Queue Logic ---
-    function playItem(item, addToQueueIfMissing = true, seekTo = 0) {
-      if (!item || !item.url) return;
+    // =========================================================================
+    // 9. UI RENDERING & CONTROLS
+    // =========================================================================
+    function switchTab(tab) {
+      state.activeTab = tab;
+      ['ytsync', 'shoutcast', 'favorites'].forEach(t => {
+        const btn = document.getElementById(`nav-${t}`);
+        if (btn) btn.classList.toggle('active', t === tab);
+      });
 
-      // Avoid restarting if the exact same stream is already actively playing
-      if (state.currentItem && state.currentItem.url === item.url && !audio.paused && seekTo === 0) {
+      document.getElementById('ytToolbar').style.display = tab === 'ytsync' ? 'flex' : 'none';
+      document.getElementById('shoutcastToolbar').style.display = tab === 'shoutcast' ? 'flex' : 'none';
+      renderActiveTabGrid();
+    }
+
+    function renderActiveTabGrid() {
+      const titleEl = document.getElementById('sectionTitle');
+      const countEl = document.getElementById('resultCount');
+
+      if (state.activeTab === 'ytsync') {
+        titleEl.textContent = 'Server-Synchronized YouTube Search & Queue';
+        countEl.textContent = `${state.ytSearchResults.length} Search Results`;
+        renderYouTubeSearchCards();
+      } else if (state.activeTab === 'shoutcast') {
+        titleEl.textContent = 'Live Shoutcast & Icecast Station Directory';
+        countEl.textContent = `${state.shoutcastResults.length} Live Stations`;
+        renderStationCards(state.shoutcastResults, false);
+      } else if (state.activeTab === 'favorites') {
+        titleEl.textContent = 'Your Saved Favorites (Accessible via !radio in-game)';
+        countEl.textContent = `${state.favorites.length} Favorites Saved`;
+        renderStationCards(state.favorites, true);
+      }
+    }
+
+    function renderStationCards(list, showSlotBadges) {
+      const grid = document.getElementById('mainGrid');
+      grid.innerHTML = '';
+
+      if (!list || list.length === 0) {
+        grid.innerHTML = `<div style="color:var(--text-dim); padding:14px;">No stations found. Try searching a genre or station name above!</div>`;
         return;
       }
 
-      state.currentItem = item;
-      if (addToQueueIfMissing) {
-        const existingIdx = state.queue.findIndex(q => q.url === item.url);
-        if (existingIdx === -1) {
-          state.queue.push(item);
-          state.queueIndex = state.queue.length - 1;
-        } else {
-          state.queueIndex = existingIdx;
-        }
-      }
+      list.forEach((st, idx) => {
+        const isPlayingThis = state.mode === 'radio' && state.currentRadio && state.currentRadio.url === st.url && !radioAudio.paused;
+        const isFav = state.favorites.some(f => f.url === st.url);
 
-      audio.src = item.url;
-      audio.volume = state.volume / 100;
-      audio.play().then(() => {
-        state.isPlaying = true;
-        if (seekTo > 0 && !item.isLive) {
-          audio.currentTime = seekTo;
-        }
-        updateNowPlayingUI(item, true);
-        renderQueue();
-        renderCurrentGrid();
-      }).catch(err => {
-        console.warn('Playback error:', err);
-        showToast('Stream unavailable or blocked; trying next...');
+        const card = document.createElement('div');
+        card.className = `station-card ${isPlayingThis ? 'playing' : ''}`;
+        card.innerHTML = `
+          <div>
+            ${showSlotBadges ? `<span class="slot-badge">!radio Favorite Slot #${idx + 1}</span>` : ''}
+            <div class="card-top">
+              <div class="station-name"></div>
+              <button class="fav-btn ${isFav ? 'active' : ''}" title="Toggle Favorite">&#9733;</button>
+            </div>
+            <div class="station-meta"></div>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-primary btn-sm play-btn">${isPlayingThis ? 'Playing Live' : '&#9654; Listen Live'}</button>
+          </div>
+        `;
+
+        card.querySelector('.station-name').textContent = st.name;
+        card.querySelector('.station-meta').textContent = st.genre || 'Shoutcast Stream';
+        card.querySelector('.play-btn').addEventListener('click', () => playRadioStream(st, showSlotBadges ? idx : -1));
+        card.querySelector('.fav-btn').addEventListener('click', () => toggleFavorite(st));
+
+        grid.appendChild(card);
       });
     }
 
+    function renderServerQueue() {
+      const container = document.getElementById('ytQueueList');
+      container.innerHTML = '';
+
+      if (state.currentYT) {
+        const nowRow = document.createElement('div');
+        nowRow.className = 'queue-item active';
+        nowRow.innerHTML = `
+          <div class="queue-item-info">
+            <div class="queue-item-title">&#9654; ${escapeHtml(state.currentYT.title)}</div>
+            <div class="queue-item-sub">Playing Now • Added by ${escapeHtml(state.currentYT.reqBy || 'Player')}</div>
+          </div>
+        `;
+        nowRow.addEventListener('click', resyncToServerClock);
+        container.appendChild(nowRow);
+      }
+
+      state.serverQueue.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'queue-item';
+        row.innerHTML = `
+          <div class="queue-item-info">
+            <div class="queue-item-title">${idx + 1}. ${escapeHtml(item.title)}</div>
+            <div class="queue-item-sub">Queued by ${escapeHtml(item.reqBy || 'Player')}</div>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+
+      if (!state.currentYT && state.serverQueue.length === 0) {
+        container.innerHTML = `<div style="color:var(--text-dim); font-size:0.78rem; padding:8px;">Server queue is empty. Add a YouTube link or type <b>!yt &lt;url&gt;</b> in TF2 chat!</div>`;
+      }
+    }
+
     function togglePlayPause() {
-      if (!state.currentItem) {
-        if (state.queue.length > 0) playItem(state.queue[0]);
-        else playItem(CURATED_STATIONS[0]);
-        return;
+      if (state.mode === 'yt' && ytReady && ytPlayer) {
+        const st = ytPlayer.getPlayerState();
+        if (st === YT.PlayerState.PLAYING) {
+          ytPlayer.pauseVideo();
+          document.getElementById('playPauseBtn').innerHTML = '&#9654; Sync Play';
+        } else {
+          resyncToServerClock();
+          document.getElementById('playPauseBtn').innerHTML = '&#10074;&#10074; Pause';
+        }
+      } else if (state.currentRadio) {
+        if (radioAudio.paused) {
+          radioAudio.play();
+          document.getElementById('playPauseBtn').innerHTML = '&#10074;&#10074; Pause';
+        } else {
+          radioAudio.pause();
+          document.getElementById('playPauseBtn').innerHTML = '&#9654; Play';
+        }
+      } else if (state.favorites.length > 0) {
+        playFavoriteBySlot(1);
       }
-      if (audio.paused) {
-        audio.play();
-        state.isPlaying = true;
+    }
+
+    function handleNextAction() {
+      if (state.mode === 'yt' && state.currentYT) {
+        broadcastSkipCurrentYT();
       } else {
-        audio.pause();
-        state.isPlaying = false;
+        playNextFavorite();
       }
-      updateNowPlayingUI(state.currentItem, !audio.paused);
     }
 
-    function stopPlayback() {
-      audio.pause();
-      audio.removeAttribute('src');
-      audio.load();
-      state.isPlaying = false;
-      updateNowPlayingUI(state.currentItem, false);
-    }
-
-    function playNext() {
-      if (state.queue.length === 0) return;
-      if (state.shuffle) {
-        state.queueIndex = Math.floor(Math.random() * state.queue.length);
-      } else {
-        state.queueIndex = (state.queueIndex + 1) % state.queue.length;
+    function stopAllPlayback() {
+      radioAudio.pause();
+      radioAudio.removeAttribute('src');
+      if (ytReady && ytPlayer && ytPlayer.stopVideo) {
+        ytPlayer.stopVideo();
       }
-      playItem(state.queue[state.queueIndex], false);
-    }
-
-    function playPrev() {
-      if (state.queue.length === 0) return;
-      state.queueIndex = (state.queueIndex - 1 + state.queue.length) % state.queue.length;
-      playItem(state.queue[state.queueIndex], false);
-    }
-
-    function toggleShuffle() {
-      state.shuffle = !state.shuffle;
-      document.getElementById('shuffleBtn').textContent = `Shuffle: ${state.shuffle ? 'ON' : 'OFF'}`;
+      updateNowPlayingBar('STOPPED', 'Playback Stopped', 'Use !radio or click Play to resume', false);
     }
 
     function setVolume(val, updateSlider = false) {
       const v = Math.max(0, Math.min(100, Number(val)));
       state.volume = v;
-      audio.volume = v / 100;
+      radioAudio.volume = v / 100;
+      if (ytReady && ytPlayer && ytPlayer.setVolume) {
+        ytPlayer.setVolume(v);
+      }
       document.getElementById('volLabel').textContent = `${v}%`;
-      if (updateSlider) {
-        document.getElementById('volSlider').value = v;
-      }
+      if (updateSlider) document.getElementById('volSlider').value = v;
+      localStorage.setItem('openhive_vol_v2', String(v));
     }
 
-    function seekAudio(percent) {
-      if (audio.duration && isFinite(audio.duration)) {
-        audio.currentTime = (percent / 100) * audio.duration;
-      }
+    function updateNowPlayingBar(badgeText, titleText, subText, isPlaying) {
+      document.getElementById('npBadge').textContent = badgeText;
+      document.getElementById('npTitle').textContent = titleText;
+      document.getElementById('npSub').textContent = subText;
+      document.getElementById('playPauseBtn').innerHTML = isPlaying ? '&#10074;&#10074; Pause' : '&#9654; Play';
     }
 
-    audio.addEventListener('timeupdate', () => {
-      const curEl = document.getElementById('curTime');
-      const durEl = document.getElementById('durTime');
-      const slider = document.getElementById('seekSlider');
-
-      curEl.textContent = formatSeconds(audio.currentTime);
-      if (audio.duration && isFinite(audio.duration)) {
-        durEl.textContent = formatSeconds(audio.duration);
-        slider.value = (audio.currentTime / audio.duration) * 100;
-      } else {
-        durEl.textContent = 'LIVE';
-        slider.value = 100;
-      }
-    });
-
-    audio.addEventListener('ended', () => {
-      playNext();
-    });
+    function updateBadges() {
+      document.getElementById('favCount').textContent = state.favorites.length;
+      document.getElementById('ytQueueCount').textContent = (state.currentYT ? 1 : 0) + state.serverQueue.length;
+    }
 
     function formatSeconds(sec) {
       if (!sec || isNaN(sec)) return '0:00';
@@ -941,264 +1585,18 @@
       return `${m}:${s < 10 ? '0' : ''}${s}`;
     }
 
-    // --- 6. Live Radio Browser API Search ---
-    async function searchGlobalStations(autoPlayFirst = false) {
-      const query = document.getElementById('searchInput').value.trim();
-      if (!query) return;
-
-      switchTab('search');
-      document.getElementById('resultCount').textContent = 'Searching global directory...';
-
-      const params = new URLSearchParams({
-        name: query,
-        limit: '36',
-        hidebroken: 'true',
-        order: 'clickcount',
-        reverse: 'true'
-      });
-
-      await fetchStationsFromMirrors(params, `Search: "${query}"`, autoPlayFirst);
-    }
-
-    async function quickTag(tag) {
-      switchTab('search');
-      document.getElementById('resultCount').textContent = `Loading top ${tag} stations...`;
-
-      const params = new URLSearchParams({
-        tag: tag,
-        limit: '36',
-        hidebroken: 'true',
-        order: 'clickcount',
-        reverse: 'true'
-      });
-
-      await fetchStationsFromMirrors(params, `Genre: ${tag.toUpperCase()}`, false);
-    }
-
-    async function fetchStationsFromMirrors(params, titleText, autoPlayFirst) {
-      document.getElementById('sectionTitle').textContent = titleText;
-
-      for (const mirror of API_MIRRORS) {
-        try {
-          const res = await fetch(`${mirror}?${params.toString()}`);
-          if (!res.ok) continue;
-          const data = await res.json();
-
-          state.searchResults = data
-            .filter(st => st.url_resolved)
-            .map(st => ({
-              id: st.stationuuid,
-              name: st.name.trim() || 'Unnamed Station',
-              url: st.url_resolved,
-              genre: `${st.countrycode || 'GLOBAL'} • ${st.codec || 'MP3'} ${st.bitrate ? st.bitrate + 'k' : ''}`.trim(),
-              isLive: true
-            }));
-
-          document.getElementById('resultCount').textContent = `${state.searchResults.length} stations found`;
-          renderStationCards(state.searchResults);
-
-          if (autoPlayFirst && state.searchResults.length > 0) {
-            playItem(state.searchResults[0]);
-          }
-          return;
-        } catch (err) {
-          console.warn('Mirror failed, trying next:', mirror);
-        }
-      }
-      document.getElementById('resultCount').textContent = 'Search error (check connection)';
-    }
-
-    // --- 7. UI Rendering & Favorites ---
-    function switchTab(tab) {
-      state.activeTab = tab;
-      ['curated', 'jukebox', 'favorites', 'search'].forEach(t => {
-        const el = document.getElementById(`nav-${t}`);
-        if (el) el.classList.toggle('active', t === tab);
-      });
-      renderCurrentGrid();
-    }
-
-    function renderCurrentGrid() {
-      const titleEl = document.getElementById('sectionTitle');
-      const countEl = document.getElementById('resultCount');
-
-      if (state.activeTab === 'curated') {
-        titleEl.textContent = 'Curated & TF2 Mix Stations';
-        countEl.textContent = `${CURATED_STATIONS.length} Presets`;
-        renderStationCards(CURATED_STATIONS);
-      } else if (state.activeTab === 'jukebox') {
-        titleEl.textContent = 'Jukebox Tracks (On-Demand Audio)';
-        countEl.textContent = `${JUKEBOX_TRACKS.length} Tracks`;
-        renderStationCards(JUKEBOX_TRACKS);
-      } else if (state.activeTab === 'favorites') {
-        titleEl.textContent = 'Your Saved Favorites';
-        countEl.textContent = `${state.favorites.length} Saved`;
-        renderStationCards(state.favorites);
-      } else if (state.activeTab === 'search') {
-        renderStationCards(state.searchResults);
-      }
-    }
-
-    function renderStationCards(list) {
-      const grid = document.getElementById('stationGrid');
-      grid.innerHTML = '';
-
-      if (!list || list.length === 0) {
-        grid.innerHTML = `<div style="color:var(--text-dim); padding: 12px;">No stations or tracks in this view yet. Use the search bar above!</div>`;
-        return;
-      }
-
-      list.forEach(item => {
-        const isPlayingThis = state.currentItem && state.currentItem.url === item.url && !audio.paused;
-        const isFav = state.favorites.some(f => f.url === item.url);
-
-        const card = document.createElement('div');
-        card.className = `station-card ${isPlayingThis ? 'playing' : ''}`;
-
-        card.innerHTML = `
-          <div>
-            <div class="card-top">
-              <div class="station-name"></div>
-              <button class="fav-btn ${isFav ? 'active' : ''}" title="Save to Favorites">&#9733;</button>
-            </div>
-            <div class="station-meta"></div>
-          </div>
-          <div class="card-actions">
-            <button class="btn btn-primary btn-sm play-btn">${isPlayingThis ? 'Playing' : '&#9654; Play'}</button>
-            <button class="btn btn-sm queue-btn">+ Queue</button>
-          </div>
-        `;
-
-        card.querySelector('.station-name').textContent = item.name;
-        card.querySelector('.station-meta').textContent = item.genre || (item.isLive ? 'Live Stream' : 'Audio Track');
-
-        card.querySelector('.play-btn').addEventListener('click', () => playItem(item));
-        card.querySelector('.queue-btn').addEventListener('click', () => {
-          state.queue.push(item);
-          renderQueue();
-          showToast(`Added "${item.name}" to Queue`);
-        });
-        card.querySelector('.fav-btn').addEventListener('click', () => toggleFavorite(item));
-
-        grid.appendChild(card);
-      });
-    }
-
-    function renderQueue() {
-      const container = document.getElementById('queueList');
-      container.innerHTML = '';
-
-      state.queue.forEach((item, idx) => {
-        const isCurrent = state.currentItem && state.currentItem.url === item.url;
-        const row = document.createElement('div');
-        row.className = `queue-item ${isCurrent ? 'active' : ''}`;
-
-        const titleSpan = document.createElement('div');
-        titleSpan.className = 'queue-item-title';
-        titleSpan.textContent = `${idx + 1}. ${item.name}`;
-        titleSpan.addEventListener('click', () => {
-          state.queueIndex = idx;
-          playItem(item, false);
-        });
-
-        const delBtn = document.createElement('span');
-        delBtn.textContent = '✕';
-        delBtn.style.color = 'var(--text-dim)';
-        delBtn.style.padding = '0 4px';
-        delBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          state.queue.splice(idx, 1);
-          renderQueue();
-        });
-
-        row.appendChild(titleSpan);
-        row.appendChild(delBtn);
-        container.appendChild(row);
-      });
-    }
-
-    function clearQueue() {
-      state.queue = [];
-      renderQueue();
-      showToast('Queue Cleared');
-    }
-
-    function addCustomUrl(playImmediately) {
-      const nameInput = document.getElementById('customNameInput');
-      const urlInput = document.getElementById('customUrlInput');
-      const url = urlInput.value.trim();
-      if (!url) return;
-
-      const item = {
-        id: 'usr_' + Date.now(),
-        name: nameInput.value.trim() || url.split('/').pop() || 'Custom Audio Stream',
-        url: url,
-        genre: 'Custom URL',
-        isLive: false
-      };
-
-      state.queue.push(item);
-      renderQueue();
-      if (playImmediately) {
-        playItem(item, false);
-      } else {
-        showToast('Added custom URL to Queue');
-      }
-      nameInput.value = '';
-      urlInput.value = '';
-    }
-
-    function toggleFavorite(item) {
-      const idx = state.favorites.findIndex(f => f.url === item.url);
-      if (idx === -1) {
-        state.favorites.push(item);
-        showToast(`Saved "${item.name}" to Favorites`);
-      } else {
-        state.favorites.splice(idx, 1);
-        showToast(`Removed from Favorites`);
-      }
-      localStorage.setItem('openhive_favs', JSON.stringify(state.favorites));
-      updateFavCount();
-      renderCurrentGrid();
-    }
-
-    function updateFavCount() {
-      document.getElementById('favCount').textContent = state.favorites.length;
-    }
-
-    function updateNowPlayingUI(item, playing) {
-      const badge = document.getElementById('npBadge');
-      const title = document.getElementById('npTitle');
-      const sub = document.getElementById('npSub');
-      const btn = document.getElementById('playPauseBtn');
-
-      if (!item) return;
-
-      badge.textContent = playing ? (item.isLive ? 'LIVE ON AIR' : 'PLAYING TRACK') : 'PAUSED';
-      title.textContent = item.name;
-      sub.textContent = item.genre || 'OpenHive Audio';
-      btn.innerHTML = playing ? '&#10074;&#10074; Pause' : '&#9654; Play';
-    }
-
-    function updateVisualizer() {
-      const playing = !audio.paused && state.isPlaying;
-      visBars.forEach((bar, i) => {
-        if (!playing) {
-          bar.style.height = '10%';
-        } else {
-          const wave = Math.sin(Date.now() / 180 + i * 0.6) * 35 + 45;
-          const jitter = Math.random() * 25;
-          bar.style.height = `${Math.min(100, Math.max(12, wave + jitter))}%`;
-        }
-      });
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, s => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[s]));
     }
 
     function showToast(msg) {
-      const toast = document.getElementById('toast');
-      toast.textContent = msg;
-      toast.classList.add('visible');
-      clearTimeout(window._toastTimer);
-      window._toastTimer = setTimeout(() => toast.classList.remove('visible'), 2500);
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('visible');
+      clearTimeout(window._tTimer);
+      window._tTimer = setTimeout(() => t.classList.remove('visible'), 2600);
     }
   </script>
 </body>
